@@ -1,0 +1,5 @@
+project( conv )
+find_package( OpenCV REQUIRED )
+aux_source_directory( . src_list )
+add_executable( conv ${src_list} )
+target_link_libraries (conv ${OpenCV_LIBS})
