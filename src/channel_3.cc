@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 Mat
-parallel3(func f, Mat &M){
+parallel3(func f, const Mat &M){
     vector<Mat> M_3;
     split(M, M_3);
     vector<Mat> res;
@@ -19,7 +19,7 @@ parallel3(func f, Mat &M){
 }
 
 Mat
-parallel3(func2 f, Mat &M1, Mat &M2){
+parallel3(func2 f, const Mat &M1, const Mat &M2){
     vector<Mat> M1_3;
     vector<Mat> M2_3;
     split(M1, M1_3);
@@ -38,7 +38,7 @@ parallel3(func2 f, Mat &M1, Mat &M2){
 
 
 Mat
-parallel3(func3 f, Mat &M1, Mat &M2, int a){
+parallel3(func3 f, const Mat &M1, const Mat &M2, int a){
     vector<Mat> M1_3;
     vector<Mat> M2_3;
     if(M1.channels() == 3) split(M1, M1_3);
@@ -58,7 +58,7 @@ parallel3(func3 f, Mat &M1, Mat &M2, int a){
 }
 
 Mat
-parallel3(func4 f, Mat &M, int a){
+parallel3(func4 f, const Mat &M, int a){
     vector<Mat> M_3;
     split(M, M_3);
     vector<Mat> res;

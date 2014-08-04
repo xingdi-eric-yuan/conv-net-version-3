@@ -19,7 +19,7 @@ run(){
     cout<<"Read testY successfully, including "<<testY.cols<<" samples"<<endl;
     int amount;
     if(G_CHECKING){
-        amount = 20;
+        amount = 2;
     }else{
         amount = 50000;
     }
@@ -36,10 +36,11 @@ run(){
     vector<Fcl> HiddenLayers;
     Smr smr;
 
-//    convConfig.push_back(ConvLayerConfig(18, 50, 5, false, true));
+//    convConfig.push_back(ConvLayerConfig(18, 2, 5, false, true));
     convConfig.push_back(ConvLayerConfig(9, 32, 2, false, true));
     convConfig.push_back(ConvLayerConfig(7, 32, 2, false, true));
-    fcConfig.push_back(FullConnectLayerConfig(30, 0.5));
+    fcConfig.push_back(FullConnectLayerConfig(200, 0.5));
+    fcConfig.push_back(FullConnectLayerConfig(200, 0.5));
 
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgDim, nsamples);
     // Train network using Back Propogation
@@ -74,14 +75,4 @@ main(int argc, char** argv){
     cout<<"Totally used time: "<<((double)(end - start)) / CLOCKS_PER_SEC<<" second"<<endl;
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
 

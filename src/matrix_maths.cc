@@ -13,26 +13,26 @@ Reciprocal(Scalar &s){
 }
 
 Mat 
-Reciprocal(Mat &M){
+Reciprocal(const Mat &M){
     return 1.0 / M;
 }
 
 Mat 
-sigmoid(Mat &M){
+sigmoid(const Mat &M){
     Mat temp;
     exp(-M, temp);
     return 1.0 / (temp + 1.0);
 }
 
 Mat 
-dsigmoid(Mat &a){
+dsigmoid(const Mat &a){
     Mat res = 1.0 - a;
     res = res.mul(a);
     return res;
 }
 
 Mat
-ReLU(Mat& M){
+ReLU(const Mat& M){
     Mat res = M > 0.0;
     res.convertTo(res, CV_64FC1, 1.0 / 255, 0);
     res = res.mul(M);
@@ -40,14 +40,14 @@ ReLU(Mat& M){
 }
 
 Mat
-dReLU(Mat& M){
+dReLU(const Mat& M){
     Mat res = M > 0.0;
     res.convertTo(res, CV_64FC1, 1.0 / 255.0);
     return res;
 }
 
 Mat 
-Tanh(Mat &M){
+Tanh(const Mat &M){
     Mat res(M);
     for(int i=0; i<res.rows; i++){
         for(int j=0; j<res.cols; j++){
@@ -58,13 +58,13 @@ Tanh(Mat &M){
 }
 
 Mat
-dTanh(Mat &M){
+dTanh(const Mat &M){
     Mat res = Mat::ones(M.rows, M.cols, CV_64FC1);
     return res - M.mul(M);
 }
 
 Mat 
-nonLinearity(Mat &M){
+nonLinearity(const Mat &M){
     if(nonlin == NL_RELU){
         return ReLU(M);
     }elif(nonlin == NL_TANH){
@@ -75,7 +75,7 @@ nonLinearity(Mat &M){
 }
 
 Mat 
-dnonLinearity(Mat &M){
+dnonLinearity(const Mat &M){
     if(nonlin == NL_RELU){
         return dReLU(M);
     }elif(nonlin == NL_TANH){
@@ -86,19 +86,18 @@ dnonLinearity(Mat &M){
 }
 
 Mat 
-nonLinearityC3(Mat &M){
+nonLinearityC3(const Mat &M){
 	return parallel3(nonLinearity, M);
 }
 
 Mat 
-dnonLinearityC3(Mat &M){
+dnonLinearityC3(const Mat &M){
 	return parallel3(dnonLinearity, M);
 }
 
-
 // Mimic rot90() in Matlab/GNU Octave.
 Mat 
-rot90(Mat &M, int k){
+rot90(const Mat &M, int k){
     Mat res;
     if(k == 0) return M;
     elif(k == 1){
@@ -112,7 +111,7 @@ rot90(Mat &M, int k){
 // A Matlab/Octave style 2-d convolution function.
 // from http://blog.timmlinder.com/2011/07/opencv-equivalent-to-matlabs-conv2-function/
 Mat 
-conv2(Mat &img, Mat &kernel, int convtype) {
+conv2(const Mat &img, const Mat &kernel, int convtype) {
     Mat dest;
     Mat source = img;
     if(CONV_FULL == convtype) {
@@ -136,7 +135,7 @@ conv2(Mat &img, Mat &kernel, int convtype) {
 }
 
 Mat
-convCalc(Mat &img, Mat &kernel, int convtype){
+convCalc(const Mat &img, const Mat &kernel, int convtype){
     if(img.channels() == 1 && kernel.channels() == 1){
         return conv2(img, kernel, convtype);
     }else{
@@ -148,7 +147,7 @@ convCalc(Mat &img, Mat &kernel, int convtype){
 // for upsample
 // see function kron() in Matlab/Octave
 Mat
-kron(Mat &a, Mat &b){
+kron(const Mat &a, const Mat &b){
     Mat res = Mat::zeros(a.rows * b.rows, a.cols * b.cols, CV_64FC3);
     for(int i=0; i<a.rows; i++){
         for(int j=0; j<a.cols; j++){

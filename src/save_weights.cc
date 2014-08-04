@@ -5,7 +5,7 @@ using namespace std;
 
 
 void
-save2txt3ch(Mat &data, string str, int step){
+save2txt3ch(const Mat &data, string str, int step){
     string s = std::to_string(step);
     str += s;
     string str_r = str + "_r";
@@ -41,7 +41,7 @@ save2txt3ch(Mat &data, string str, int step){
 }
 
 void
-save2txt(Mat &data, string str, int step){
+save2txt(const Mat &data, string str, int step){
     string s = std::to_string(step);
     str += s;
     string str_r = str + "_r";
@@ -63,7 +63,7 @@ save2txt(Mat &data, string str, int step){
 }
 
 void
-mkdir(vector<Cvl> &CLayers){
+mkdir(const vector<Cvl> &CLayers){
     int layers = CLayers.size();
     for(int i = 0; i < layers; i++){
         string str = "./weight/cl_" + std::to_string(i);
@@ -77,7 +77,7 @@ mkdir(vector<Cvl> &CLayers){
 }
 
 void
-save2txt(vector<Cvl> &CLayers, int step){
+save2txt(const vector<Cvl> &CLayers, int step){
     for(int cl = 0; cl < CLayers.size(); cl++){
         for(int i=0; i<convConfig[cl].KernelAmount; i++){
             string str = "weight/cl_" + std::to_string(cl) + "/kernel_" + std::to_string(i) + "/epoch_";

@@ -9,16 +9,16 @@ Point findLoc(Mat &, int );
 vector<Point> findLocCh3(Mat &, int );
 void minMaxLoc(Mat &, Scalar &, Scalar &, vector<Point> &, vector<Point> &);
 
-Mat Pooling(Mat &, int , int , int , vector<vector<Point> > &, bool );
+Mat Pooling(const Mat &, int , int , int , vector<vector<Point> > &, bool );
 
-Mat UnPooling(Mat &, int , int , int , vector<vector<Point> > &);
+Mat UnPooling(const Mat &, int , int , int , vector<vector<Point> > &);
 
-Mat localResponseNorm(unordered_map<string, Mat> &, string);
+Mat localResponseNorm(const unordered_map<string, Mat> &, string);
 
-Mat dlocalResponseNorm(unordered_map<string, Mat> &, string);
+Mat dlocalResponseNorm(const unordered_map<string, Mat> &, string);
 
-void convAndPooling(vector<Mat> &, vector<Cvl> &, 
+void convAndPooling(const vector<Mat> &, const vector<Cvl> &, 
                 unordered_map<string, Mat> &, 
                 unordered_map<string, vector<vector<Point> > > &, bool);
 
-void hashDelta(Mat &, unordered_map<string, Mat> &, vector<Cvl> &);
+void hashDelta(const Mat &, unordered_map<string, Mat> &, vector<Cvl> &);

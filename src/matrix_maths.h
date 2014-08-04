@@ -5,25 +5,25 @@ using namespace std;
 using namespace cv;
 
 Scalar Reciprocal(Scalar &);
-Mat Reciprocal(Mat &);
-Mat sigmoid(Mat &);
-Mat dsigmoid(Mat &);
-Mat ReLU(Mat& );
-Mat dReLU(Mat& );
-Mat Tanh(Mat &);
-Mat dTanh(Mat &);
-Mat nonLinearity(Mat &);
-Mat dnonLinearity(Mat &);
-Mat nonLinearityC3(Mat &);
-Mat dnonLinearityC3(Mat &);
+Mat Reciprocal(const Mat &);
+Mat sigmoid(const Mat &);
+Mat dsigmoid(const Mat &);
+Mat ReLU(const Mat& );
+Mat dReLU(const Mat& );
+Mat Tanh(const Mat &);
+Mat dTanh(const Mat &);
+Mat nonLinearity(const Mat &);
+Mat dnonLinearity(const Mat &);
+Mat nonLinearityC3(const Mat &);
+Mat dnonLinearityC3(const Mat &);
 // Mimic rot90() in Matlab/GNU Octave.
-Mat rot90(Mat &, int);
+Mat rot90(const Mat &, int);
 // A Matlab/Octave style 2-d convolution function.
 // from http://blog.timmlinder.com/2011/07/opencv-equivalent-to-matlabs-conv2-function/
-Mat conv2(Mat &, Mat &, int);
-Mat convCalc(Mat &, Mat &, int );
+Mat conv2(const Mat&, const Mat&, int);
+Mat convCalc(const Mat&, const Mat&, int);
 // get KroneckerProduct 
 // for upsample
 // see function kron() in Matlab/Octave
-Mat kron(Mat&, Mat&);
+Mat kron(const Mat&, const Mat&);
 Mat getBernoulliMatrix(int, int, double);

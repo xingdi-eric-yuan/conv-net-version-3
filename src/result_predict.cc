@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 
-Mat resultProdict(vector<Mat> &x, vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, double lambda){
+Mat resultProdict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl> &hLayers, const Smr &smr, double lambda){
  
     int nsamples = x.size();
     // Conv & Pooling
@@ -15,7 +15,7 @@ Mat resultProdict(vector<Mat> &x, vector<Cvl> &CLayers, vector<Fcl> &hLayers, Sm
     vector<Mat> P;
     vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
     for(int i = 0; i<vecstr.size(); i++){
-        P.push_back(cpmap[vecstr[i]]);
+        P.push_back(cpmap.at(vecstr[i]));
     }
     Mat convolvedX = concatenateMat(P, nsamples);
     P.clear();

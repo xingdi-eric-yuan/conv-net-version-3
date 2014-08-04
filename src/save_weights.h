@@ -6,7 +6,7 @@
 using namespace std;
 using namespace cv;
 
-void save2txt3ch(Mat &, string , int );
-void save2txt(Mat &, string , int);
-void mkdir(vector<Cvl> &);
-void save2txt(vector<Cvl> &, int);
+void save2txt3ch(const Mat &, string , int );
+void save2txt(const Mat &, string , int);
+void mkdir(const vector<Cvl> &);
+void save2txt(const vector<Cvl> &, int);

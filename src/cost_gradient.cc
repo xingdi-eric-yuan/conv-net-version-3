@@ -16,7 +16,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     vector<Mat> P;
     vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
     for(int i = 0; i<vecstr.size(); i++){
-        P.push_back(cpmap[vecstr[i]]);
+        P.push_back(cpmap.at(vecstr[i]));
     }
     Mat convolvedX = concatenateMat(P, nsamples);
     P.clear();
@@ -110,7 +110,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         for(int k = 0; k < deltaKey.size(); k ++){
             string locstr = deltaKey[k].substr(0, deltaKey[k].length() - 1);
             string convstr = deltaKey[k].substr(0, deltaKey[k].length() - 2);
-            Mat upDelta = UnPooling(cpmap[deltaKey[k]], pDim, pDim, Pooling_Methed, locmap[locstr]);
+            Mat upDelta = UnPooling(cpmap.at(deltaKey[k]), pDim, pDim, Pooling_Methed, locmap.at(locstr));
             string upDstr = locstr + "UD";
             cpmap[upDstr] = upDelta;
         }
@@ -119,14 +119,14 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             string convstr = deltaKey[k].substr(0, deltaKey[k].length() - 2);
             // Local response normalization 
             string upDstr = locstr + "UD";
-            
-            //Mat dLRN = dlocalResponseNorm(cpmap, upDstr); 
-            //dLRN = dLRN.mul(dnonLinearityC3(cpmap[convstr]));
-            //cpmap[upDstr] = dLRN;
+            Mat dLRN = dlocalResponseNorm(cpmap, upDstr); 
+            dLRN = dLRN.mul(dnonLinearityC3(cpmap[convstr]));
+            cpmap[upDstr] = dLRN;
 
-            Mat upDelta = cpmap[upDstr];
-            upDelta = upDelta.mul(dnonLinearityC3(cpmap[convstr]));
-            cpmap[upDstr] = upDelta;
+            //Mat upDelta;
+            //cpmap.at(upDstr).copyTo(upDelta);
+            //upDelta = upDelta.mul(dnonLinearityC3(cpmap.at(convstr)));
+            //cpmap[upDstr] = upDelta;
         }
         if(cl > 0){
             for(int k = 0; k < convConfig[cl - 1].KernelAmount; k ++){
@@ -136,11 +136,11 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                     unordered_map<string, Mat>::iterator got = cpmap.find(strd);
                     if(got == cpmap.end()){
                         string psize = getPreviousLayerKey(prev[i], KEY_POOL);
-                        Mat zero = Mat::zeros(cpmap[psize].rows, cpmap[psize].cols, CV_64FC3);
+                        Mat zero = Mat::zeros(cpmap.at(psize).rows, cpmap.at(psize).cols, CV_64FC3);
                         cpmap[strd] = zero;
                     }
                     int currentKernel = getCurrentKernelNum(prev[i]);
-                    cpmap[strd] += convCalc(cpmap[prev[i]], CLayers[cl].layer[currentKernel].W, CONV_FULL);
+                    cpmap.at(strd) += convCalc(cpmap.at(prev[i]), CLayers[cl].layer[currentKernel].W, CONV_FULL);
                 }
             }
         }
@@ -149,14 +149,14 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             Scalar tpgradb = Scalar(0.0, 0.0, 0.0);
             vector<string> convKey = getKeys(nsamples, cl, j, KEY_UP_DELTA);
             for(int m = 0; m < convKey.size(); m ++){
-                Mat temp = rot90(cpmap[convKey[m]], 2);
+                Mat temp = rot90(cpmap.at(convKey[m]), 2);
                 if(cl == 0){
                     tpgradW += convCalc(x[getSampleNum(convKey[m])], temp, CONV_VALID);
                 }else{
                     string strprev = getPreviousLayerKey(convKey[m], KEY_POOL);
-                    tpgradW += convCalc(cpmap[strprev], temp, CONV_VALID);
+                    tpgradW += convCalc(cpmap.at(strprev), temp, CONV_VALID);
                 }
-                tpgradb += sum(cpmap[convKey[m]]);
+                tpgradb += sum(cpmap.at(convKey[m]));
             }
             if(convConfig[cl].is3chKernel){
                 CLayers[cl].layer[j].Wgrad = tpgradW / nsamples + lambda * CLayers[cl].layer[j].W;

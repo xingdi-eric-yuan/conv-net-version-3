@@ -40,7 +40,7 @@ minMaxLoc(Mat &img, Scalar &minVal, Scalar &maxVal, vector<Point> &minLoc, vecto
 }
 
 Mat
-Pooling(Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat, bool isTest){
+Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat, bool isTest){
     int remX = M.cols % pHori;
     int remY = M.rows % pVert;
     Mat newM;
@@ -101,7 +101,7 @@ Pooling(Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > 
 }
 
 Mat 
-UnPooling(Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat){
+UnPooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat){
     Mat res;
     if(POOL_MEAN == poolingMethod){
         Mat one = Mat::ones(pVert, pHori, CV_64FC3);
@@ -121,66 +121,72 @@ UnPooling(Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> 
 }
 
 Mat
-localResponseNorm(unordered_map<string, Mat> &map, string str){
+localResponseNorm(const unordered_map<string, Mat> &map, string str){
 
     int current_kernel_num = getCurrentKernelNum(str);
     int current_layer_num = getCurrentLayerNum(str);
     string current_layer = getCurrentLayer(str);
 
-    Mat sum;
-    Mat res = map[current_layer + "K" + i2str(current_kernel_num)];
+    Mat res;
+    map.at(current_layer + "K" + i2str(current_kernel_num)).copyTo(res);
+    Mat sum = Mat::zeros(res.rows, res.cols, CV_64FC3);
+
     int from, to;
     if(convConfig[current_layer_num].KernelAmount < lrn_size){
         from = 0;
         to = convConfig[current_layer_num].KernelAmount - 1;
     }else{
         from = (current_kernel_num - lrn_size / 2) > 0 ? (current_kernel_num - lrn_size / 2) : 0;
-        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
+        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? 
+             (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
     }
     for(int j = from; j <= to; j++){
         string tmpstr = current_layer + "K" + i2str(j);
-        Mat tmpmat = map[tmpstr];
-        pow(tmpmat, 2, tmpmat);
-        if(j == from) sum = tmpmat;
-        else sum += tmpmat;
+        Mat tmpmat;
+        map.at(tmpstr).copyTo(tmpmat);
+        pow(tmpmat, 2.0, tmpmat);
+        sum += tmpmat;
+        tmpmat.release();
     }
     sum = sum * lrn_scale / convConfig[current_layer_num].KernelAmount;
     sum += Scalar(1.0, 1.0, 1.0);
     pow(sum, lrn_beta, sum);
     divide(res, sum, res);
+    sum.release();
     return res;
 }
 
 Mat
-dlocalResponseNorm(unordered_map<string, Mat> &map, string str){
+dlocalResponseNorm(const unordered_map<string, Mat> &map, string str){
 
     int current_kernel_num = getCurrentKernelNum(str);
     int current_layer_num = getCurrentLayerNum(str);
     string current_layer = getCurrentLayer(str);
 
-    Mat sum;
-    Mat res;
-    Mat a = map[current_layer + "K" + i2str(current_kernel_num)];
-    Mat da = map[str];
+    Mat a, da, tmp, res;
+    map.at(current_layer + "K" + i2str(current_kernel_num)).copyTo(a);
+    map.at(str).copyTo(da);
+    Mat sum = Mat::zeros(a.rows, a.cols, CV_64FC3);
     int from, to;
     if(convConfig[current_layer_num].KernelAmount < lrn_size){
         from = 0;
         to = convConfig[current_layer_num].KernelAmount - 1;
     }else{
         from = (current_kernel_num - lrn_size / 2) > 0 ? (current_kernel_num - lrn_size / 2) : 0;
-        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
+        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? 
+             (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
     }
     for(int j = from; j <= to; j++){
         string tmpstr = current_layer + "K" + i2str(j);
-        Mat tmpmat = map[tmpstr];
+        Mat tmpmat;
+        map.at(tmpstr).copyTo(tmpmat);
         pow(tmpmat, 2, tmpmat);
-        if(j == from) sum = tmpmat;
-        else sum += tmpmat;
+        sum += tmpmat;
+        tmpmat.release();
     }
     sum = sum * lrn_scale / convConfig[current_layer_num].KernelAmount;
     sum += Scalar(1.0, 1.0, 1.0);
 
-    Mat tmp;
     pow(sum, lrn_beta, tmp);
     res = da.mul(tmp);
 
@@ -193,13 +199,17 @@ dlocalResponseNorm(unordered_map<string, Mat> &map, string str){
 
     pow(sum, lrn_beta * 2, tmp);
     divide(res, tmp, res);
+    a.release();
+    da.release();
+    sum.release();
+    tmp.release();
     return res;
 }
 
 
 
 void 
-convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers, 
+convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers, 
                 unordered_map<string, Mat> &map, 
                 unordered_map<string, vector<vector<Point> > > &loc, bool isTest){
     // Conv & Pooling
@@ -226,9 +236,9 @@ convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers,
                 for(int k = 0; k < convConfig[cl].KernelAmount; k ++){
                     string s2 = s1 + "C0K" + i2str(k);
                     // Local response normalization
-                    Mat tmpconv = map[s2];
-                    //tmpconv = localResponseNorm(map, s2);
-                    //map[s2] = tmpconv;
+                    Mat tmpconv;
+                    map.at(s2).copyTo(tmpconv);
+                    tmpconv = localResponseNorm(map, s2);
                     vector<vector<Point> > PoolingLoc;
                     tmpconv = Pooling(tmpconv, pdim, pdim, Pooling_Methed, PoolingLoc, isTest);
                     string s3 = s2 + "P";
@@ -245,7 +255,7 @@ convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers,
                     for(int k = 0; k < convConfig[cl].KernelAmount; k ++){
                         string s2 = vec[tp] + "C" + i2str(cl) + "K" + i2str(k);
                         Mat temp = rot90(CLayers[cl].layer[k].W, 2);
-                        Mat tmpconv = convCalc(map[vec[tp]], temp, CONV_VALID);
+                        Mat tmpconv = convCalc(map.at(vec[tp]), temp, CONV_VALID);
                         if(convConfig[cl].is3chKernel) tmpconv += CLayers[cl].layer[k].b;
                         else tmpconv += CLayers[cl].layer[k].b[0];
                         tmpconv = nonLinearityC3(tmpconv);
@@ -256,9 +266,9 @@ convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers,
                     // Local response normalization & Pooling
                     for(int k = 0; k < convConfig[cl].KernelAmount; k ++){
                         string s2 = vec[tp] + "C" + i2str(cl) + "K" + i2str(k);
-                        Mat tmpconv = map[s2];
-                        //tmpconv = localResponseNorm(map, s2);
-                        //map[s2] = tmpconv;
+                        Mat tmpconv;
+                        map.at(s2).copyTo(tmpconv);
+                        tmpconv = localResponseNorm(map, s2);
                         vector<vector<Point> > PoolingLoc;
                         tmpconv = Pooling(tmpconv, pdim, pdim, Pooling_Methed, PoolingLoc, isTest);
                         string s3 = s2 + "P";
@@ -279,7 +289,7 @@ convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers,
 }
 
 void
-hashDelta(Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers){
+hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers){
     int nsamples = src.cols;
     for(int m = 0; m < nsamples; m ++){
         string s1 = "X" + i2str(m);
