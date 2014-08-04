@@ -36,16 +36,18 @@ run(){
     vector<Fcl> HiddenLayers;
     Smr smr;
 
-    convConfig.push_back(ConvLayerConfig(18, 2, 5, false, true));
-    fcConfig.push_back(FullConnectLayerConfig(100, 0.5));
+//    convConfig.push_back(ConvLayerConfig(18, 50, 5, false, true));
+    convConfig.push_back(ConvLayerConfig(9, 32, 2, false, true));
+    convConfig.push_back(ConvLayerConfig(7, 32, 2, false, true));
+    fcConfig.push_back(FullConnectLayerConfig(30, 0.5));
 
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgDim, nsamples);
     // Train network using Back Propogation
-    trainNetwork(tp, trainY, ConvLayers, HiddenLayers, smr, 1e-3);
+    trainNetwork(tp, trainY, ConvLayers, HiddenLayers, smr, 1e-4);
 
     if(! G_CHECKING){
         // Test use test set
-        Mat result = resultProdict(testX, ConvLayers, HiddenLayers, smr, 1e-3);
+        Mat result = resultProdict(testX, ConvLayers, HiddenLayers, smr, 1e-4);
         Mat err(testY);
         err -= result;
         int correct = err.cols;

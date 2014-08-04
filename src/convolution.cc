@@ -121,14 +121,22 @@ UnPooling(Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> 
 }
 
 Mat
-localResponseNorm(unordered_map<string, Mat> &map, string str, int kernel){
+localResponseNorm(unordered_map<string, Mat> &map, string str){
 
-    string current_layer = getCurrentLayer(str);
+    int current_kernel_num = getCurrentKernelNum(str);
     int current_layer_num = getCurrentLayerNum(str);
+    string current_layer = getCurrentLayer(str);
+
     Mat sum;
-    Mat res = map[str];
-    int from = (kernel - lrn_size / 2) > 0 ? (kernel - lrn_size / 2) : 0;
-    int to = (kernel + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? (kernel + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
+    Mat res = map[current_layer + "K" + i2str(current_kernel_num)];
+    int from, to;
+    if(convConfig[current_layer_num].KernelAmount < lrn_size){
+        from = 0;
+        to = convConfig[current_layer_num].KernelAmount - 1;
+    }else{
+        from = (current_kernel_num - lrn_size / 2) > 0 ? (current_kernel_num - lrn_size / 2) : 0;
+        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
+    }
     for(int j = from; j <= to; j++){
         string tmpstr = current_layer + "K" + i2str(j);
         Mat tmpmat = map[tmpstr];
@@ -137,9 +145,54 @@ localResponseNorm(unordered_map<string, Mat> &map, string str, int kernel){
         else sum += tmpmat;
     }
     sum = sum * lrn_scale / convConfig[current_layer_num].KernelAmount;
-    sum += 1.0;
+    sum += Scalar(1.0, 1.0, 1.0);
     pow(sum, lrn_beta, sum);
     divide(res, sum, res);
+    return res;
+}
+
+Mat
+dlocalResponseNorm(unordered_map<string, Mat> &map, string str){
+
+    int current_kernel_num = getCurrentKernelNum(str);
+    int current_layer_num = getCurrentLayerNum(str);
+    string current_layer = getCurrentLayer(str);
+
+    Mat sum;
+    Mat res;
+    Mat a = map[current_layer + "K" + i2str(current_kernel_num)];
+    Mat da = map[str];
+    int from, to;
+    if(convConfig[current_layer_num].KernelAmount < lrn_size){
+        from = 0;
+        to = convConfig[current_layer_num].KernelAmount - 1;
+    }else{
+        from = (current_kernel_num - lrn_size / 2) > 0 ? (current_kernel_num - lrn_size / 2) : 0;
+        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
+    }
+    for(int j = from; j <= to; j++){
+        string tmpstr = current_layer + "K" + i2str(j);
+        Mat tmpmat = map[tmpstr];
+        pow(tmpmat, 2, tmpmat);
+        if(j == from) sum = tmpmat;
+        else sum += tmpmat;
+    }
+    sum = sum * lrn_scale / convConfig[current_layer_num].KernelAmount;
+    sum += Scalar(1.0, 1.0, 1.0);
+
+    Mat tmp;
+    pow(sum, lrn_beta, tmp);
+    res = da.mul(tmp);
+
+    pow(sum, lrn_beta - 1, tmp);
+    tmp = tmp.mul(a);
+    tmp = tmp.mul(a);
+    tmp = tmp.mul(da);
+    tmp *= lrn_scale / convConfig[current_layer_num].KernelAmount * 2.0;
+    res -= tmp;
+
+    pow(sum, lrn_beta * 2, tmp);
+    divide(res, tmp, res);
     return res;
 }
 
@@ -174,7 +227,8 @@ convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers,
                     string s2 = s1 + "C0K" + i2str(k);
                     // Local response normalization
                     Mat tmpconv = map[s2];
-                    //tmpconv = localResponseNorm(map, s2, k);
+                    //tmpconv = localResponseNorm(map, s2);
+                    //map[s2] = tmpconv;
                     vector<vector<Point> > PoolingLoc;
                     tmpconv = Pooling(tmpconv, pdim, pdim, Pooling_Methed, PoolingLoc, isTest);
                     string s3 = s2 + "P";
@@ -203,7 +257,8 @@ convAndPooling(vector<Mat> &x, vector<Cvl> &CLayers,
                     for(int k = 0; k < convConfig[cl].KernelAmount; k ++){
                         string s2 = vec[tp] + "C" + i2str(cl) + "K" + i2str(k);
                         Mat tmpconv = map[s2];
-                        //tmpconv = localResponseNorm(map, s2, k);
+                        //tmpconv = localResponseNorm(map, s2);
+                        //map[s2] = tmpconv;
                         vector<vector<Point> > PoolingLoc;
                         tmpconv = Pooling(tmpconv, pdim, pdim, Pooling_Methed, PoolingLoc, isTest);
                         string s3 = s2 + "P";

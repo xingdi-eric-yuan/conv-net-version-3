@@ -18,13 +18,13 @@ weightRandomInit(ConvK &convk, int width, bool is3chKernel){
         convk.Wgrad = Mat::zeros(width, width, CV_64FC1);
         convk.bgrad = Scalar(0.0);
     }
-    double epsilon = 0.12;
+    double epsilon = 0.025;
     convk.W = convk.W.mul(2 * epsilon) - epsilon;
 }
 
 void
 weightRandomInit(Fcl &ntw, int inputsize, int hiddensize){
-    double epsilon = 0.12;
+    double epsilon = 0.05;
     ntw.W = Mat::ones(hiddensize, inputsize, CV_64FC1);
     randu(ntw.W, Scalar(-1.0), Scalar(1.0));
     ntw.W = ntw.W.mul(2 * epsilon) - epsilon;
@@ -35,7 +35,7 @@ weightRandomInit(Fcl &ntw, int inputsize, int hiddensize){
 
 void 
 weightRandomInit(Smr &smr, int nclasses, int nfeatures){
-    double epsilon = 0.012;
+    double epsilon = 0.0125;
     smr.W = Mat::ones(nclasses, nfeatures, CV_64FC1);
     randu(smr.W, Scalar(-1.0), Scalar(1.0));
     smr.W = smr.W.mul(2 * epsilon) - epsilon;

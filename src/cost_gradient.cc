@@ -72,7 +72,8 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         }
     }
     smr.cost = J1 + J2 + J3 + J4;
-    if(! G_CHECKING) cout<<", J1 = "<<J1<<", J2 = "<<J2<<", J3 = "<<J3<<", J4 = "<<J4<<", Cost = "<<smr.cost<<endl;
+    if(! G_CHECKING) 
+        cout<<", J1 = "<<J1<<", J2 = "<<J2<<", J3 = "<<J3<<", J4 = "<<J4<<", Cost = "<<smr.cost<<endl;
     // bp - softmax
     tmp = (groundTruth - p) * hidden[hidden.size() - 1].t();
     tmp /= -nsamples;
@@ -110,9 +111,21 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             string locstr = deltaKey[k].substr(0, deltaKey[k].length() - 1);
             string convstr = deltaKey[k].substr(0, deltaKey[k].length() - 2);
             Mat upDelta = UnPooling(cpmap[deltaKey[k]], pDim, pDim, Pooling_Methed, locmap[locstr]);
-            upDelta = upDelta.mul(dnonLinearityC3(cpmap[convstr]));
-
             string upDstr = locstr + "UD";
+            cpmap[upDstr] = upDelta;
+        }
+        for(int k = 0; k < deltaKey.size(); k ++){
+            string locstr = deltaKey[k].substr(0, deltaKey[k].length() - 1);
+            string convstr = deltaKey[k].substr(0, deltaKey[k].length() - 2);
+            // Local response normalization 
+            string upDstr = locstr + "UD";
+            
+            //Mat dLRN = dlocalResponseNorm(cpmap, upDstr); 
+            //dLRN = dLRN.mul(dnonLinearityC3(cpmap[convstr]));
+            //cpmap[upDstr] = dLRN;
+
+            Mat upDelta = cpmap[upDstr];
+            upDelta = upDelta.mul(dnonLinearityC3(cpmap[convstr]));
             cpmap[upDstr] = upDelta;
         }
         if(cl > 0){

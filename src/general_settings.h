@@ -56,7 +56,7 @@ static int Pooling_Methed = POOL_MAX;
 static int nonlin = NL_RELU;
 
 // Local Response Normalization
-static int lrn_size = 5;
+static int lrn_size = 3;
 static double lrn_scale = 0.0000125;
 static double lrn_beta = 0.75;
 

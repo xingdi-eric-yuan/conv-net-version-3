@@ -13,4 +13,5 @@ int getSampleNum(string);
 int getCurrentKernelNum(string);
 int getCurrentLayerNum(string);
 string getCurrentLayer(string);
+string getCurrentKernel(string);
 string getPreviousLayerKey(string, int);

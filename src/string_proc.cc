@@ -187,6 +187,21 @@ getCurrentLayer(string str){
     return res;
 }
 
+string 
+getCurrentKernel(string str){
+    int i = str.length() - 1;
+    while(str[i] !='K'){
+        -- i;
+    }
+    int start = i + 1;
+    i = start;
+    while(str[i] <= '9' && str[i] >= '0'){
+        ++ i;
+    }
+    string sub = str.substr(0, i);
+    return sub;
+}
+
 string
 getPreviousLayerKey(string str, int keyType){
     int i = str.length() - 1; 

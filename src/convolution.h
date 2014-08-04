@@ -13,7 +13,9 @@ Mat Pooling(Mat &, int , int , int , vector<vector<Point> > &, bool );
 
 Mat UnPooling(Mat &, int , int , int , vector<vector<Point> > &);
 
-Mat localResponseNorm(unordered_map<string, Mat> &, string , int);
+Mat localResponseNorm(unordered_map<string, Mat> &, string);
+
+Mat dlocalResponseNorm(unordered_map<string, Mat> &, string);
 
 void convAndPooling(vector<Mat> &, vector<Cvl> &, 
                 unordered_map<string, Mat> &, 
