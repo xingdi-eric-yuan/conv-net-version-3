@@ -7,7 +7,6 @@ void
 gradientChecking_ConvLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, vector<Mat> &x, Mat &y, double lambda){
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
-    DROPOUT = false;
     getNetworkCost(x, y, CLayers, hLayers, smr, lambda);
     int a = 0;
     int b = 0;
@@ -54,7 +53,6 @@ void
 gradientChecking_FullConnectLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, vector<Mat> &x, Mat &y, double lambda){
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
-    DROPOUT = false;
     getNetworkCost(x, y, CLayers, hLayers, smr, lambda);
     int a = 0;
     int b = 0;
@@ -82,7 +80,6 @@ void
 gradientChecking_SoftmaxLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, vector<Mat> &x, Mat &y, double lambda){
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
-    DROPOUT = false;
     getNetworkCost(x, y, CLayers, hLayers, smr, lambda);
     Mat grad(smr.Wgrad);
     cout<<"test network !!!!"<<endl;
