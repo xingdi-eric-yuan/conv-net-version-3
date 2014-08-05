@@ -10,9 +10,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     // Conv & Pooling
     unordered_map<string, Mat> cpmap;
     unordered_map<string, vector<vector<Point> > > locmap;
-
     convAndPooling(x, CLayers, cpmap, locmap, false);
-
     vector<Mat> P;
     vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
     for(int i = 0; i<vecstr.size(); i++){
@@ -119,14 +117,16 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             string convstr = deltaKey[k].substr(0, deltaKey[k].length() - 2);
             // Local response normalization 
             string upDstr = locstr + "UD";
-            Mat dLRN = dlocalResponseNorm(cpmap, upDstr); 
-            dLRN = dLRN.mul(dnonLinearityC3(cpmap[convstr]));
-            cpmap[upDstr] = dLRN;
-
-            //Mat upDelta;
-            //cpmap.at(upDstr).copyTo(upDelta);
-            //upDelta = upDelta.mul(dnonLinearityC3(cpmap.at(convstr)));
-            //cpmap[upDstr] = upDelta;
+            if(convConfig[cl].useLRN){
+                Mat dLRN = dlocalResponseNorm(cpmap, upDstr); 
+                dLRN = dLRN.mul(dnonLinearityC3(cpmap[convstr]));
+                cpmap[upDstr] = dLRN;
+            }else{
+                Mat upDelta;
+                cpmap.at(upDstr).copyTo(upDelta);
+                upDelta = upDelta.mul(dnonLinearityC3(cpmap.at(convstr)));
+                cpmap[upDstr] = upDelta;
+            }
         }
         if(cl > 0){
             for(int k = 0; k < convConfig[cl - 1].KernelAmount; k ++){
