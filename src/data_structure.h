@@ -38,15 +38,21 @@ typedef struct SoftmaxRegession{
 struct ConvLayerConfig {
     int KernelSize;
     int KernelAmount;
+    double WeightDecay;
     int PoolingDim;
     bool is3chKernel;
     bool useLRN; //LocalResponseNormalization
-    ConvLayerConfig(int a, int b, int c, bool d, bool e) : KernelSize(a), KernelAmount(b), PoolingDim(c), is3chKernel(d) , useLRN(e){}
+    ConvLayerConfig(int a, int b, double c, int d, bool e, bool f) : KernelSize(a), KernelAmount(b), WeightDecay(c), PoolingDim(d), is3chKernel(e) , useLRN(f){}
 };
 
 struct FullConnectLayerConfig {
     int NumHiddenNeurons;
+    double WeightDecay;
     double DropoutRate;
-    FullConnectLayerConfig(int a, double b) : NumHiddenNeurons(a), DropoutRate(b) {}
+    FullConnectLayerConfig(int a, double b, double c) : NumHiddenNeurons(a), WeightDecay(b), DropoutRate(c) {}
 };
 
+struct SoftmaxLayerConfig {
+    int NumClasses;
+    double WeightDecay;
+};

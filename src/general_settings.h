@@ -21,7 +21,7 @@
 #include <iostream>
 
 // Gradient Checking
-#define G_CHECKING 1
+#define G_CHECKING 0
 // Conv2 parameter
 #define CONV_FULL 0
 #define CONV_SAME 1
@@ -49,8 +49,7 @@ using namespace cv;
 ///////////////////////////////////
 // General parameters
 ///////////////////////////////////
-static bool DROPOUT = false;
-static int nclasses = 10;
+static bool DROPOUT = true;
 static int batch = 256;
 static int Pooling_Methed = POOL_MAX;
 static int nonlin = NL_RELU;
@@ -62,3 +61,4 @@ static double lrn_beta = 0.75;
 
 extern vector<ConvLayerConfig> convConfig;
 extern vector<FullConnectLayerConfig> fcConfig;
+extern SoftmaxLayerConfig softmaxConfig;

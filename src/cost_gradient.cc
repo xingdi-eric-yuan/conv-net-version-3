@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 void
-getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, double lambda){
+getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr){
 
     int nsamples = x.size();
     // Conv & Pooling
@@ -36,48 +36,41 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         }else hidden.push_back(tmpacti);
         acti.push_back(tmpacti);
     }
-    Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
-    Mat tmp;
-    reduce(M, tmp, 0, CV_REDUCE_MAX);
-    M -= repeat(tmp, M.rows, 1);
-    Mat p;
-    exp(M, p);
-    reduce(p, tmp, 0, CV_REDUCE_SUM);
-    divide(p, repeat(tmp, p.rows, 1), p);
 
-    // softmax regression
-    Mat groundTruth = Mat::zeros(nclasses, nsamples, CV_64FC1);
+    Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
+    M -= repeat(reduce(M, 0, CV_REDUCE_MAX), M.rows, 1);
+    M = exp(M);
+    Mat p = divide(M, repeat(reduce(M, 0, CV_REDUCE_SUM), M.rows, 1));
+
+    Mat groundTruth = Mat::zeros(softmaxConfig.NumClasses, nsamples, CV_64FC1);
     for(int i = 0; i < nsamples; i++){
         groundTruth.ATD(y.ATD(0, i), i) = 1.0;
     }
-    Mat logP;
-    log(p, logP);
-    logP = logP.mul(groundTruth);
-    double J1 = - sum(logP)[0] / nsamples;
-    pow(smr.W, 2.0, tmp);
-    double J2 = sum(tmp)[0] * lambda / 2;
+
+    double J1 = - sum(groundTruth.mul(log(p)))[0] / nsamples;
+    Mat tmp = pow(smr.W, 2.0);
+    double J2 = sum(tmp)[0] * softmaxConfig.WeightDecay / 2;
     double J3 = 0.0; 
     double J4 = 0.0;
     for(int hl = 0; hl < hLayers.size(); hl++){
         pow(hLayers[hl].W, 2.0, tmp);
-        J3 += sum(tmp)[0] * lambda / 2;
+        J3 += sum(tmp)[0] * fcConfig[hl].WeightDecay / 2;
     }
     for(int cl = 0; cl < CLayers.size(); cl++){
         for(int i = 0; i < convConfig[cl].KernelAmount; i++){
             pow(CLayers[cl].layer[i].W, 2.0, tmp);
-            if(convConfig[cl].is3chKernel) J4 += (sum(tmp)[0] + sum(tmp)[1] + sum(tmp)[2]) * lambda / 2;
-            else J4 += 3 * sum(tmp)[0] * lambda / 2;
+            if(convConfig[cl].is3chKernel) J4 += (sum(tmp)[0] + sum(tmp)[1] + sum(tmp)[2]) * convConfig[cl].WeightDecay / 2;
+            else J4 += 3 * sum(tmp)[0] * convConfig[cl].WeightDecay / 2;
         }
     }
     smr.cost = J1 + J2 + J3 + J4;
     if(! G_CHECKING) 
         cout<<", J1 = "<<J1<<", J2 = "<<J2<<", J3 = "<<J3<<", J4 = "<<J4<<", Cost = "<<smr.cost<<endl;
     // bp - softmax
-    tmp = (groundTruth - p) * hidden[hidden.size() - 1].t();
-    tmp /= -nsamples;
-    smr.Wgrad = tmp + lambda * smr.W;
+    tmp = - (groundTruth - p) * hidden[hidden.size() - 1].t() / nsamples;
+    smr.Wgrad = tmp + softmaxConfig.WeightDecay * smr.W;
     reduce((groundTruth - p), tmp, 1, CV_REDUCE_SUM);
-    smr.bgrad = tmp / -nsamples;
+    smr.bgrad = - reduce((groundTruth - p), 1, CV_REDUCE_SUM) / nsamples;
 
     // bp - full connected
     vector<Mat> delta(hidden.size());
@@ -96,7 +89,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     for(int i = fcConfig.size() - 1; i >= 0; i--){
 
         hLayers[i].Wgrad = delta[i + 1] * (hidden[i]).t();
-        hLayers[i].Wgrad = hLayers[i].Wgrad / nsamples + lambda * hLayers[i].W;
+        hLayers[i].Wgrad = hLayers[i].Wgrad / nsamples + fcConfig[i].WeightDecay * hLayers[i].W;
         reduce(delta[i + 1], tmp, 1, CV_REDUCE_SUM);
         hLayers[i].bgrad = tmp / nsamples;
     }
@@ -107,7 +100,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         vector<string> deltaKey = getLayerKey(nsamples, cl, KEY_DELTA);
         for(int k = 0; k < deltaKey.size(); k ++){
             string locstr = deltaKey[k].substr(0, deltaKey[k].length() - 1);
-            string convstr = deltaKey[k].substr(0, deltaKey[k].length() - 2);
             Mat upDelta = UnPooling(cpmap.at(deltaKey[k]), pDim, pDim, Pooling_Methed, locmap.at(locstr));
             string upDstr = locstr + "UD";
             cpmap[upDstr] = upDelta;
@@ -140,7 +132,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                         cpmap[strd] = zero;
                     }
                     int currentKernel = getCurrentKernelNum(prev[i]);
-                    cpmap.at(strd) += convCalc(cpmap.at(prev[i]), CLayers[cl].layer[currentKernel].W, CONV_FULL);
+                     cpmap.at(strd) += convCalc(cpmap.at(prev[i]), CLayers[cl].layer[currentKernel].W, CONV_FULL);
                 }
             }
         }
@@ -159,7 +151,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                 tpgradb += sum(cpmap.at(convKey[m]));
             }
             if(convConfig[cl].is3chKernel){
-                CLayers[cl].layer[j].Wgrad = tpgradW / nsamples + lambda * CLayers[cl].layer[j].W;
+                CLayers[cl].layer[j].Wgrad = tpgradW / nsamples + convConfig[cl].WeightDecay * CLayers[cl].layer[j].W;
                 CLayers[cl].layer[j].bgrad = tpgradb.mul(1 / nsamples);
             }else{
                 vector<Mat> _tpgradWs;
@@ -170,13 +162,14 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                     _bufferW += _tpgradWs[ch];
                     _bufferb += tpgradb[ch];
                 }
-                _bufferW = _bufferW / nsamples + lambda * _tpgradWs.size() * CLayers[cl].layer[j].W;
+                _bufferW = _bufferW / nsamples + convConfig[cl].WeightDecay * _tpgradWs.size() * CLayers[cl].layer[j].W;
                 _bufferb /= nsamples;
                 CLayers[cl].layer[j].Wgrad = _bufferW;
                 CLayers[cl].layer[j].bgrad = Scalar(_bufferb);
                 _tpgradWs.clear();
                 _bufferW.release();
             }
+            tpgradW.release();
         }
     }
     // destructor
@@ -184,7 +177,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     M.release();
     tmp.release();
     groundTruth.release();
-    logP.release();
     cpmap.clear();
     locmap.clear();
     acti.clear();

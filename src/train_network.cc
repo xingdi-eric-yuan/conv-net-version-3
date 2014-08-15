@@ -4,13 +4,13 @@ using namespace cv;
 using namespace std;
 
 void
-trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLayers, Smr &smr, double lambda){
+trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLayers, Smr &smr){
 
     if (G_CHECKING){
         
-        gradientChecking_ConvLayer(CLayers, HiddenLayers, smr, x, y, lambda);
-        gradientChecking_FullConnectLayer(CLayers, HiddenLayers, smr, x, y, lambda);
-        gradientChecking_SoftmaxLayer(CLayers, HiddenLayers, smr, x, y, lambda);
+        gradientChecking_ConvLayer(CLayers, HiddenLayers, smr, x, y);
+        gradientChecking_FullConnectLayer(CLayers, HiddenLayers, smr, x, y);
+        gradientChecking_SoftmaxLayer(CLayers, HiddenLayers, smr, x, y);
     }else{
         cout<<"Network Learning................"<<endl;
 
@@ -49,13 +49,15 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             v_cvl_b.push_back(tmpvecb);
         }
         mkdir(CLayers);
-        int epochs = 5;
-        double lrate = 0.1;
-        int iterPerEpo = 1500;
-        double Momentum = 0.5;
+        int epochs = 10;
+        double lrate_w = 0.1;
+        double lrate_b = 0.2;
+        int iterPerEpo = 250;
+        double Momentum_w = 0.5;
+        double Momentum_b = 0.5;
         for(int epo = 0; epo < epochs; epo++){
             for(int k = 0; k < iterPerEpo; k++){
-                if(k > 50) Momentum = 0.95;
+                if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95;}
                 int randomNum = ((long)rand() + (long)rand()) % (x.size() - batch);
                 vector<Mat> batchX;
                 for(int i = 0; i < batch; i++){
@@ -65,22 +67,22 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
                 Mat batchY; 
                 y(roi).copyTo(batchY);
                 cout<<"epochs: "<<epo<<", learning step: "<<k;//<<endl;
-                getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr, lambda);
+                getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
 
-                v_smr_W = v_smr_W * Momentum + lrate * smr.Wgrad;
-                v_smr_b = v_smr_b * Momentum + lrate * smr.bgrad;
+                v_smr_W = v_smr_W * Momentum_w + lrate_w * smr.Wgrad;
+                v_smr_b = v_smr_b * Momentum_b + lrate_b * smr.bgrad;
                 smr.W -= v_smr_W;
                 smr.b -= v_smr_b;
                 for(int i = 0; i < HiddenLayers.size(); i++){
-                    v_hl_W[i] = v_hl_W[i] * Momentum + lrate * HiddenLayers[i].Wgrad;
-                    v_hl_b[i] = v_hl_b[i] * Momentum + lrate * HiddenLayers[i].bgrad;
+                    v_hl_W[i] = v_hl_W[i] * Momentum_w + lrate_w * HiddenLayers[i].Wgrad;
+                    v_hl_b[i] = v_hl_b[i] * Momentum_b + lrate_b * HiddenLayers[i].bgrad;
                     HiddenLayers[i].W -= v_hl_W[i];
                     HiddenLayers[i].b -= v_hl_b[i];
                 }
                 for(int cl = 0; cl < CLayers.size(); cl++){
                     for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-                        v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum + lrate * CLayers[cl].layer[i].Wgrad;
-                        v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum + lrate * CLayers[cl].layer[i].bgrad;
+                        v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum_w + lrate_w * CLayers[cl].layer[i].Wgrad;
+                        v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum_b + lrate_b * CLayers[cl].layer[i].bgrad;
                         CLayers[cl].layer[i].W -= v_cvl_W[cl][i];
                         CLayers[cl].layer[i].b -= v_cvl_b[cl][i];
                     }
@@ -89,7 +91,8 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
                 batchY.release();
             }   
             save2txt(CLayers, epo);
-            lrate *= 0.75;
+            lrate_w *= 0.5;
+            lrate_b *= 0.5;
         }
         v_smr_W.release();
         v_smr_b.release();
@@ -99,22 +102,5 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         v_cvl_b.clear();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

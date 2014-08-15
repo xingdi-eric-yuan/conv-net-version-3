@@ -33,9 +33,13 @@ minMaxLoc(Mat &img, Scalar &minVal, Scalar &maxVal, vector<Point> &minLoc, vecto
     for(int i = 0; i < imgs.size(); i++){
         Point min;
         Point max;
-        minMaxLoc( imgs[i], &minVal[i], &maxVal[i], &min, &max);
+        double minval;
+        double maxval;
+        minMaxLoc( imgs[i], &minval, &maxval, &min, &max);
         minLoc.push_back(min);
         maxLoc.push_back(max);
+        minVal[i] = minval;
+        maxVal[i] = maxval;
     }
 }
 
@@ -65,7 +69,7 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
                 minMaxLoc( temp, minVal, maxVal, minLoc, maxLoc );
                 val = maxVal;
                 vector<Point> tppt;
-                for(int ch = 0; ch < minLoc.size(); ch++){
+                for(int ch = 0; ch < 3; ch++){
                     tppt.push_back(Point(maxLoc[ch].x + j * pHori, maxLoc[ch].y + i * pVert));
                 }
                 locat.push_back(tppt);
@@ -111,7 +115,7 @@ UnPooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<P
         res = Mat::zeros(M.rows * pVert, M.cols * pHori, CV_64FC3);
         for(int i = 0; i < M.rows; i++){
             for(int j = 0; j < M.cols; j++){
-                for(int ch = 0; ch < locat[0].size(); ch++){
+                for(int ch = 0; ch < 3; ch++){
                     res.AT3D(locat[i * M.cols + j][ch].y, locat[i * M.cols + j][ch].x)[ch] = M.AT3D(i, j)[ch];
                 }
             }
@@ -278,7 +282,6 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                         tmpconv.release();
                         PoolingLoc.clear();
                     }
-                    
                 }
                 swap(vec, tmpvec);
                 tmpvec.clear();

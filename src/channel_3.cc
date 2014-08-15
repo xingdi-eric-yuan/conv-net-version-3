@@ -9,7 +9,7 @@ parallel3(func f, const Mat &M){
     split(M, M_3);
     vector<Mat> res;
     Mat dst = Mat::zeros(M.rows, M.cols, CV_64FC3);
-    for(int i = 0; i < M_3.size(); i++){
+    for(int i = 0; i < 3; i++){
         res.push_back(f(M_3[i]));
     }
     merge(res, dst);
@@ -47,7 +47,7 @@ parallel3(func3 f, const Mat &M1, const Mat &M2, int a){
     else{for(int i = 0; i < 3; i++) M2_3.push_back(M2);}
     vector<Mat> res;
     Mat dst;
-    for(int i = 0; i < M1_3.size(); i++){
+    for(int i = 0; i < 3; i++){
         res.push_back(f(M1_3[i], M2_3[i], a));
     }
     merge(res, dst);

@@ -64,6 +64,7 @@ save2txt(const Mat &data, string str, int step){
 
 void
 mkdir(const vector<Cvl> &CLayers){
+    mkdir("./weight", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     int layers = CLayers.size();
     for(int i = 0; i < layers; i++){
         string str = "./weight/cl_" + std::to_string(i);

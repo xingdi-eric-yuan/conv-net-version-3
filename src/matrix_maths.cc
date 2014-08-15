@@ -171,12 +171,41 @@ getBernoulliMatrix(int height, int width, double prob){
     return res;
 }
 
+// Follows are OpenCV maths
+Mat 
+exp(Mat src){
+    Mat dst;
+    exp(src, dst);
+    return dst;
+}
 
+Mat 
+log(Mat src){
+    Mat dst;
+    log(src, dst);
+    return dst;
+}
 
+Mat 
+reduce(Mat src, int direc, int conf){
+    Mat dst;
+    reduce(src, dst, direc, conf);
+    return dst;
+}
 
+Mat 
+divide(Mat m1, Mat m2){
+    Mat dst;
+    divide(m1, m2, dst);
+    return dst;
+}
 
-
-
+Mat 
+pow(Mat m1, int val){
+    Mat dst;
+    pow(m1, val, dst);
+    return dst;
+}
 
 
 

@@ -18,16 +18,16 @@ weightRandomInit(ConvK &convk, int width, bool is3chKernel){
         convk.Wgrad = Mat::zeros(width, width, CV_64FC1);
         convk.bgrad = Scalar(0.0);
     }
-    double epsilon = 0.025;
-    convk.W = convk.W.mul(2 * epsilon) - epsilon;
+    double epsilon = 0.12;
+    convk.W = convk.W * epsilon;
 }
 
 void
 weightRandomInit(Fcl &ntw, int inputsize, int hiddensize){
-    double epsilon = 0.05;
+    double epsilon = 0.12;
     ntw.W = Mat::ones(hiddensize, inputsize, CV_64FC1);
     randu(ntw.W, Scalar(-1.0), Scalar(1.0));
-    ntw.W = ntw.W.mul(2 * epsilon) - epsilon;
+    ntw.W = ntw.W * epsilon;
     ntw.b = Mat::zeros(hiddensize, 1, CV_64FC1);
     ntw.Wgrad = Mat::zeros(hiddensize, inputsize, CV_64FC1);
     ntw.bgrad = Mat::zeros(hiddensize, 1, CV_64FC1);
@@ -38,7 +38,7 @@ weightRandomInit(Smr &smr, int nclasses, int nfeatures){
     double epsilon = 0.0125;
     smr.W = Mat::ones(nclasses, nfeatures, CV_64FC1);
     randu(smr.W, Scalar(-1.0), Scalar(1.0));
-    smr.W = smr.W.mul(2 * epsilon) - epsilon;
+    smr.W = smr.W * epsilon;
     smr.b = Mat::zeros(nclasses, 1, CV_64FC1);
     smr.cost = 0.0;
     smr.Wgrad = Mat::zeros(nclasses, nfeatures, CV_64FC1);
@@ -48,9 +48,9 @@ weightRandomInit(Smr &smr, int nclasses, int nfeatures){
 void
 ConvNetInitPrarms(vector<Cvl> &ConvLayers, vector<Fcl> &HiddenLayers, Smr &smr, int imgDim, int nsamples){
     // Init Conv layers
-    for(int i=0; i<convConfig.size(); i++){
+    for(int i = 0; i < convConfig.size(); i++){
         Cvl tpcvl;
-        for(int j=0; j<convConfig[i].KernelAmount; j++){
+        for(int j = 0; j < convConfig[i].KernelAmount; j++){
             ConvK tmpConvK;
             weightRandomInit(tmpConvK, convConfig[i].KernelSize, convConfig[i].is3chKernel);
             tpcvl.layer.push_back(tmpConvK);
@@ -59,12 +59,12 @@ ConvNetInitPrarms(vector<Cvl> &ConvLayers, vector<Fcl> &HiddenLayers, Smr &smr, 
     }
     // Init Hidden layers
     int outDim = imgDim;
-    for(int i=0; i<convConfig.size(); i++){
+    for(int i = 0; i < convConfig.size(); i++){
         outDim = outDim - convConfig[i].KernelSize + 1;
         outDim = outDim / convConfig[i].PoolingDim;
     }
     int hiddenfeatures = pow(outDim, 2);
-    for(int i=0; i<ConvLayers.size(); i++){
+    for(int i = 0; i < ConvLayers.size(); i++){
         hiddenfeatures *= convConfig[i].KernelAmount;
     }
     Fcl tpntw;
@@ -76,7 +76,7 @@ ConvNetInitPrarms(vector<Cvl> &ConvLayers, vector<Fcl> &HiddenLayers, Smr &smr, 
         HiddenLayers.push_back(tpntw2);
     }
     // Init Softmax layer
-    weightRandomInit(smr, nclasses, fcConfig[fcConfig.size() - 1].NumHiddenNeurons);
+    weightRandomInit(smr, softmaxConfig.NumClasses, fcConfig[fcConfig.size() - 1].NumHiddenNeurons);
 }
 
 

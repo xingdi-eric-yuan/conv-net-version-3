@@ -27,3 +27,10 @@ Mat convCalc(const Mat&, const Mat&, int);
 // see function kron() in Matlab/Octave
 Mat kron(const Mat&, const Mat&);
 Mat getBernoulliMatrix(int, int, double);
+
+// Follows are OpenCV maths
+Mat exp(Mat);
+Mat log(Mat);
+Mat reduce(Mat, int, int);
+Mat divide(Mat, Mat);
+Mat pow(Mat, int);

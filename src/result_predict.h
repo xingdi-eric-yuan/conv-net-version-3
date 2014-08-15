@@ -4,4 +4,4 @@
 using namespace std;
 using namespace cv;
 
-Mat resultProdict(const vector<Mat> &, const vector<Cvl> &, const vector<Fcl> &, const Smr &, double);
+Mat resultProdict(const vector<Mat> &, const vector<Cvl> &, const vector<Fcl> &, const Smr &);

@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 
-Mat resultProdict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl> &hLayers, const Smr &smr, double lambda){
+Mat resultProdict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl> &hLayers, const Smr &smr){
  
     int nsamples = x.size();
     // Conv & Pooling
@@ -32,34 +32,16 @@ Mat resultProdict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector
     }
 
     Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
-    Mat tmp;
-    reduce(M, tmp, 0, CV_REDUCE_MAX);
-    M -= repeat(tmp, M.rows, 1);
-    Mat p;
-    exp(M, p);
-    reduce(p, tmp, 0, CV_REDUCE_SUM);
-    divide(p, repeat(tmp, p.rows, 1), p);
-
-    Mat logP;
-    log(p, logP);
-
-    Mat result = Mat::ones(1, logP.cols, CV_64FC1);
-    for(int i=0; i<logP.cols; i++){
-        double maxele = logP.ATD(0, i);
-        int which = 0;
-        for(int j=1; j<logP.rows; j++){
-            if(logP.ATD(j, i) > maxele){
-                maxele = logP.ATD(j, i);
-                which = j;
-            }
-        }
-        result.ATD(0, i) = which;
+    Mat result = Mat::zeros(1, M.cols, CV_64FC1);
+    double minValue, maxValue;
+    Point minLoc, maxLoc;
+    for(int i = 0; i < M.cols; i++){
+        minMaxLoc(M(Rect(i, 0, 1, M.rows)), &minValue, &maxValue, &minLoc, &maxLoc);
+        result.ATD(0, i) = (int) maxLoc.y;
     }
+
     // destructor
-    p.release();
     M.release();
-    tmp.release();
-    logP.release();
     cpmap.clear();
     locmap.clear();
     hidden.clear();
