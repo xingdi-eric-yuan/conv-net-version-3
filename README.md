@@ -85,7 +85,7 @@ To run this code, you should have
 * amount of output classes
 * weight decay
 
-####Multi-Layer**
+####Multi-Layer
 If you are using multiple of same kind of layer, just write layer config one after another. There's an example config file inside.
 
 The MIT License (MIT)
