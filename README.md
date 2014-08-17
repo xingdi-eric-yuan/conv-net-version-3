@@ -58,7 +58,7 @@ To run this code, you should have
 
 ##Config Files
 
-* **General Parameters Config**
+####General Parameters Config
 * if is gradient checking
 * batch size
 * pooling method
@@ -69,23 +69,23 @@ To run this code, you should have
 * learning rate for weight matrices
 * learning rate for bias
 
-* **Layers Config**
+####Layers Config
 * **Convolutional layers:**
-kernel size
-kernel amount
-weight decay
-pooling dimension
-if to use 3-channel kernel
-if to use local response normalization
+* kernel size
+* kernel amount
+* weight decay
+* pooling dimension
+* if to use 3-channel kernel
+* if to use local response normalization
 * **Full-Connected Layers:**
-amount of hidden neurons
-weight decay
-dropout rate
+* amount of hidden neurons
+* weight decay
+* dropout rate
 * **Softmax Layer**
-amount of output classes
-weight decay
+* amount of output classes
+* weight decay
 
-* **Multi-Layer**
+####Multi-Layer**
 If you are using multiple of same kind of layer, just write layer config one after another. There's an example config file inside.
 
 The MIT License (MIT)
