@@ -244,7 +244,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                     map.at(s2).copyTo(tmpconv);
                     if(convConfig[cl].useLRN) tmpconv = localResponseNorm(map, s2);
                     vector<vector<Point> > PoolingLoc;
-                    tmpconv = Pooling(tmpconv, pdim, pdim, Pooling_Methed, PoolingLoc, isTest);
+                    tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc, isTest);
                     string s3 = s2 + "P";
                     map[s3] = tmpconv;
                     loc[s3] = PoolingLoc;
@@ -274,7 +274,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                         map.at(s2).copyTo(tmpconv);
                         if(convConfig[cl].useLRN) tmpconv = localResponseNorm(map, s2);
                         vector<vector<Point> > PoolingLoc;
-                        tmpconv = Pooling(tmpconv, pdim, pdim, Pooling_Methed, PoolingLoc, isTest);
+                        tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc, isTest);
                         string s3 = s2 + "P";
                         map[s3] = tmpconv;
                         loc[s3] = PoolingLoc;

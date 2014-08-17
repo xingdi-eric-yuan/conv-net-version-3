@@ -65,9 +65,9 @@ dTanh(const Mat &M){
 
 Mat 
 nonLinearity(const Mat &M){
-    if(nonlin == NL_RELU){
+    if(non_linearity == NL_RELU){
         return ReLU(M);
-    }elif(nonlin == NL_TANH){
+    }elif(non_linearity == NL_TANH){
         return Tanh(M);
     }else{
         return sigmoid(M);
@@ -76,9 +76,9 @@ nonLinearity(const Mat &M){
 
 Mat 
 dnonLinearity(const Mat &M){
-    if(nonlin == NL_RELU){
+    if(non_linearity == NL_RELU){
         return dReLU(M);
-    }elif(nonlin == NL_TANH){
+    }elif(non_linearity == NL_TANH){
         return dTanh(M);
     }else{
         return dsigmoid(M);
@@ -207,6 +207,15 @@ pow(Mat m1, int val){
     return dst;
 }
 
+double 
+sum1(Mat m){
+    double res = 0.0;
+    Scalar tmp = sum(m);
+    for(int i = 0; i < m.channels(); i++){
+        res += tmp[i];
+    }
+    return res;
+}
 
 
 

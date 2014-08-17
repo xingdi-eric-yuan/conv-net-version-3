@@ -34,3 +34,4 @@ Mat log(Mat);
 Mat reduce(Mat, int, int);
 Mat divide(Mat, Mat);
 Mat pow(Mat, int);
+double sum1(Mat);

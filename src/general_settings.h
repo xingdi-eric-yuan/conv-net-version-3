@@ -12,6 +12,7 @@
 #include "matrix_maths.h"
 #include "read_data.h"
 #include "result_predict.h"
+#include "read_config.h"
 #include "save_weights.h"
 #include "train_network.h"
 #include "weight_init.h"
@@ -20,8 +21,6 @@
 #include <string>
 #include <iostream>
 
-// Gradient Checking
-#define G_CHECKING 0
 // Conv2 parameter
 #define CONV_FULL 0
 #define CONV_SAME 1
@@ -46,13 +45,6 @@
 
 using namespace std;
 using namespace cv;
-///////////////////////////////////
-// General parameters
-///////////////////////////////////
-static bool DROPOUT = true;
-static int batch = 256;
-static int Pooling_Methed = POOL_MAX;
-static int nonlin = NL_RELU;
 
 // Local Response Normalization
 static int lrn_size = 3;
@@ -62,3 +54,16 @@ static double lrn_beta = 0.75;
 extern vector<ConvLayerConfig> convConfig;
 extern vector<FullConnectLayerConfig> fcConfig;
 extern SoftmaxLayerConfig softmaxConfig;
+
+///////////////////////////////////
+// General parameters
+///////////////////////////////////
+extern bool is_gradient_checking;
+extern int batch_size;
+extern int pooling_method;
+extern int non_linearity;
+extern int training_epochs;
+extern double lrate_w;
+extern double lrate_b;
+extern int iter_per_epo;
+extern double lrate_decay;

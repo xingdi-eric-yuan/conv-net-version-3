@@ -29,7 +29,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
         //tmpacti = Tanh(tmpacti);
         tmpacti = sigmoid(tmpacti);
-        if(DROPOUT){
+        if(fcConfig[i - 1].DropoutRate < 1.0){
             Mat bnl = getBernoulliMatrix(tmpacti.rows, tmpacti.cols, fcConfig[i - 1].DropoutRate);
             hidden.push_back(tmpacti.mul(bnl));
             bernoulli.push_back(bnl);
@@ -47,29 +47,26 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         groundTruth.ATD(y.ATD(0, i), i) = 1.0;
     }
 
-    double J1 = - sum(groundTruth.mul(log(p)))[0] / nsamples;
-    Mat tmp = pow(smr.W, 2.0);
-    double J2 = sum(tmp)[0] * softmaxConfig.WeightDecay / 2;
+    double J1 = - sum1(groundTruth.mul(log(p))) / nsamples;
+    double J2 = sum1(pow(smr.W, 2.0)) * softmaxConfig.WeightDecay / 2;
     double J3 = 0.0; 
     double J4 = 0.0;
     for(int hl = 0; hl < hLayers.size(); hl++){
-        pow(hLayers[hl].W, 2.0, tmp);
-        J3 += sum(tmp)[0] * fcConfig[hl].WeightDecay / 2;
+        J3 += sum1(pow(hLayers[hl].W, 2.0)) * fcConfig[hl].WeightDecay / 2;
     }
     for(int cl = 0; cl < CLayers.size(); cl++){
         for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-            pow(CLayers[cl].layer[i].W, 2.0, tmp);
-            if(convConfig[cl].is3chKernel) J4 += (sum(tmp)[0] + sum(tmp)[1] + sum(tmp)[2]) * convConfig[cl].WeightDecay / 2;
-            else J4 += 3 * sum(tmp)[0] * convConfig[cl].WeightDecay / 2;
+            if(convConfig[cl].is3chKernel)
+                J4 += sum1(pow(CLayers[cl].layer[i].W, 2.0)) * convConfig[cl].WeightDecay / 2;
+            else 
+                J4 += 3 * sum1(pow(CLayers[cl].layer[i].W, 2.0)) * convConfig[cl].WeightDecay / 2;
         }
     }
     smr.cost = J1 + J2 + J3 + J4;
-    if(! G_CHECKING) 
+    if(!is_gradient_checking) 
         cout<<", J1 = "<<J1<<", J2 = "<<J2<<", J3 = "<<J3<<", J4 = "<<J4<<", Cost = "<<smr.cost<<endl;
     // bp - softmax
-    tmp = - (groundTruth - p) * hidden[hidden.size() - 1].t() / nsamples;
-    smr.Wgrad = tmp + softmaxConfig.WeightDecay * smr.W;
-    reduce((groundTruth - p), tmp, 1, CV_REDUCE_SUM);
+    smr.Wgrad =  - (groundTruth - p) * hidden[hidden.size() - 1].t() / nsamples + softmaxConfig.WeightDecay * smr.W;
     smr.bgrad = - reduce((groundTruth - p), 1, CV_REDUCE_SUM) / nsamples;
 
     // bp - full connected
@@ -77,21 +74,19 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     delta[delta.size() -1] = -smr.W.t() * (groundTruth - p);
     delta[delta.size() -1] = delta[delta.size() -1].mul(dsigmoid(acti[acti.size() - 1]));
     //delta[delta.size() -1] = delta[delta.size() -1].mul(dTanh(acti[acti.size() - 1]));
-    if(DROPOUT) delta[delta.size() - 1] = delta[delta.size() -1].mul(bernoulli[bernoulli.size() - 1]);
+    if(fcConfig[fcConfig.size() - 1].DropoutRate < 1.0) delta[delta.size() - 1] = delta[delta.size() -1].mul(bernoulli[bernoulli.size() - 1]);
     for(int i = delta.size() - 2; i >= 0; i--){
         delta[i] = hLayers[i].W.t() * delta[i + 1];
         if(i > 0){
             delta[i] = delta[i].mul(dsigmoid(acti[i]));
             //delta[i] = delta[i].mul(dTanh(acti[i]));
-            if(DROPOUT) delta[i] = delta[i].mul(bernoulli[i - 1]);
+            if(fcConfig[i - 1].DropoutRate < 1.0) delta[i] = delta[i].mul(bernoulli[i - 1]);
         } 
     }
     for(int i = fcConfig.size() - 1; i >= 0; i--){
-
         hLayers[i].Wgrad = delta[i + 1] * (hidden[i]).t();
         hLayers[i].Wgrad = hLayers[i].Wgrad / nsamples + fcConfig[i].WeightDecay * hLayers[i].W;
-        reduce(delta[i + 1], tmp, 1, CV_REDUCE_SUM);
-        hLayers[i].bgrad = tmp / nsamples;
+        hLayers[i].bgrad = reduce(delta[i + 1], 1, CV_REDUCE_SUM) / nsamples;
     }
     //bp - Conv layer
     hashDelta(delta[0], cpmap, CLayers);
@@ -100,7 +95,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         vector<string> deltaKey = getLayerKey(nsamples, cl, KEY_DELTA);
         for(int k = 0; k < deltaKey.size(); k ++){
             string locstr = deltaKey[k].substr(0, deltaKey[k].length() - 1);
-            Mat upDelta = UnPooling(cpmap.at(deltaKey[k]), pDim, pDim, Pooling_Methed, locmap.at(locstr));
+            Mat upDelta = UnPooling(cpmap.at(deltaKey[k]), pDim, pDim, pooling_method, locmap.at(locstr));
             string upDstr = locstr + "UD";
             cpmap[upDstr] = upDelta;
         }
@@ -175,7 +170,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     // destructor
     p.release();
     M.release();
-    tmp.release();
     groundTruth.release();
     cpmap.clear();
     locmap.clear();
