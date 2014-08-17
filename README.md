@@ -70,20 +70,20 @@ To run this code, you should have
 * learning rate for bias
 
 * **Layers Config**
-**Convolutional layers:**
-* kernel size
-* kernel amount
-* weight decay
-* pooling dimension
-* if to use 3-channel kernel
-* if to use local response normalization
-**Full-Connected Layers:**
-* amount of hidden neurons
-* weight decay
-* dropout rate
-**Softmax Layer**
-* amount of output classes
-* weight decay
+* **Convolutional layers:**
+kernel size
+kernel amount
+weight decay
+pooling dimension
+if to use 3-channel kernel
+if to use local response normalization
+* **Full-Connected Layers:**
+amount of hidden neurons
+weight decay
+dropout rate
+* **Softmax Layer**
+amount of output classes
+weight decay
 
 * **Multi-Layer**
 If you are using multiple of same kind of layer, just write layer config one after another. There's an example config file inside.
