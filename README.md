@@ -83,6 +83,9 @@ To run this code, you should have
 ####Multi-Layer
 If you are using multiple of same kind of layer, just write layer config one after another. There's [an example config file](https://github.com/xingdi-eric-yuan/conv-net-version-3/blob/master/src/config.txt) inside.
 
+##Structure and Algorithm
+See my several posts about CNNs at [my tech-blog](http://eric-yuan.me).
+
 The MIT License (MIT)
 ------------------
 
