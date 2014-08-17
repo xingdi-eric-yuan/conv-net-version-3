@@ -70,18 +70,18 @@ To run this code, you should have
 * learning rate for bias
 
 ####Layers Config
-* **Convolutional layers:**
+#####Convolutional layers:
 * kernel size
 * kernel amount
 * weight decay
 * pooling dimension
 * if to use 3-channel kernel
 * if to use local response normalization
-* **Full-Connected Layers:**
+#####Full-Connected Layers:
 * amount of hidden neurons
 * weight decay
 * dropout rate
-* **Softmax Layer**
+#####Softmax Layer
 * amount of output classes
 * weight decay
 
