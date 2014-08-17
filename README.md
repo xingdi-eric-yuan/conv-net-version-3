@@ -48,11 +48,45 @@ To run this code, you should have
 
 * **weight_init.h & weight_init.cc** - initialize weights of the whole network
 
+* **read_config.h & read_config.cc** - read config file for config parameters, see config file part below
+
 * **general_settings.h** - general settings
 
 * **data_structure.h** - data structure definition of network
 
 * **sample.cc** - main() inside :)
+
+##Config Files
+
+* **General Parameters Config**
+* if is gradient checking
+* batch size
+* pooling method
+* non-linearity method
+* training epochs
+* iteration per epoch
+* learning rate decay
+* learning rate for weight matrices
+* learning rate for bias
+
+* **Layers Config**
+**Convolutional layers:**
+* kernel size
+* kernel amount
+* weight decay
+* pooling dimension
+* if to use 3-channel kernel
+* if to use local response normalization
+**Full-Connected Layers:**
+* amount of hidden neurons
+* weight decay
+* dropout rate
+**Softmax Layer**
+* amount of output classes
+* weight decay
+
+* **Multi-Layer**
+If you are using multiple of same kind of layer, just write layer config one after another. There's an example config file inside.
 
 The MIT License (MIT)
 ------------------
