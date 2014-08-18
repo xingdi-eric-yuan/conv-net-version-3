@@ -22,12 +22,23 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     // full connected layers
     vector<Mat> hidden;
     vector<Mat> acti;
+    vector<double> factor;
     hidden.push_back(convolvedX);
     acti.push_back(convolvedX);
     vector<Mat> bernoulli;
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
         //tmpacti = Tanh(tmpacti);
+        double _factor = 0.0;
+        double _max = max(tmpacti);
+        double _min = min(tmpacti);
+        if(fabs(_min) > fabs(_max)){
+            _factor = _min / -5.0;
+        }else{
+            _factor = _max / 5.0;
+        }
+        if(_factor != 0) tmpacti = tmpacti.mul(1 / _factor);
+        factor.push_back(_factor);
         tmpacti = sigmoid(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0){
             Mat bnl = getBernoulliMatrix(tmpacti.rows, tmpacti.cols, fcConfig[i - 1].DropoutRate);
@@ -46,7 +57,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     for(int i = 0; i < nsamples; i++){
         groundTruth.ATD(y.ATD(0, i), i) = 1.0;
     }
-
     double J1 = - sum1(groundTruth.mul(log(p))) / nsamples;
     double J2 = sum1(pow(smr.W, 2.0)) * softmaxConfig.WeightDecay / 2;
     double J3 = 0.0; 
@@ -73,12 +83,14 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     vector<Mat> delta(hidden.size());
     delta[delta.size() -1] = -smr.W.t() * (groundTruth - p);
     delta[delta.size() -1] = delta[delta.size() -1].mul(dsigmoid(acti[acti.size() - 1]));
+    if(factor[factor.size() - 1] != 0) delta[delta.size() -1] = delta[delta.size() -1].mul(1 / factor[factor.size() - 1]);
     //delta[delta.size() -1] = delta[delta.size() -1].mul(dTanh(acti[acti.size() - 1]));
     if(fcConfig[fcConfig.size() - 1].DropoutRate < 1.0) delta[delta.size() - 1] = delta[delta.size() -1].mul(bernoulli[bernoulli.size() - 1]);
     for(int i = delta.size() - 2; i >= 0; i--){
         delta[i] = hLayers[i].W.t() * delta[i + 1];
         if(i > 0){
             delta[i] = delta[i].mul(dsigmoid(acti[i]));
+            if(factor[i] != 0) delta[i] = delta[i].mul(1 / factor[i]);
             //delta[i] = delta[i].mul(dTanh(acti[i]));
             if(fcConfig[i - 1].DropoutRate < 1.0) delta[i] = delta[i].mul(bernoulli[i - 1]);
         } 
@@ -173,6 +185,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     groundTruth.release();
     cpmap.clear();
     locmap.clear();
+    factor.clear();
     acti.clear();
     delta.clear();
     bernoulli.clear();

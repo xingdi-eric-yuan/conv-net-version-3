@@ -19,10 +19,24 @@ Reciprocal(const Mat &M){
 
 Mat 
 sigmoid(const Mat &M){
-    Mat temp;
-    exp(-M, temp);
-    return 1.0 / (temp + 1.0);
+    return 1.0 / (exp(-M) + 1.0);
 }
+/*
+Mat 
+sigmoid(const Mat &M){
+
+    Mat down = M <= -100.0;
+    Mat up = M >= 100.0;
+    Mat temp(M);
+    for(int i = 0; i < M.rows; i++){
+        for(int j = 0; j < M.cols; j++){
+            if(down.ATD(i, j) == 255) temp.ATD(i, j) = -100.0;
+            if(up.ATD(i, j) == 255) temp.ATD(i, j) = 100.0;
+        }
+    }
+    return 1.0 / (exp(-temp) + 1.0);
+}
+*/
 
 Mat 
 dsigmoid(const Mat &a){
@@ -215,6 +229,26 @@ sum1(Mat m){
         res += tmp[i];
     }
     return res;
+}
+
+double
+max(const Mat &m){
+    Point min;
+    Point max;
+    double minval;
+    double maxval;
+    minMaxLoc(m, &minval, &maxval, &min, &max);
+    return maxval;
+}
+
+double
+min(const Mat &m){
+    Point min;
+    Point max;
+    double minval;
+    double maxval;
+    minMaxLoc(m, &minval, &maxval, &min, &max);
+    return minval;
 }
 
 

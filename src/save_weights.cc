@@ -3,6 +3,24 @@
 using namespace cv;
 using namespace std;
 
+void 
+save2txt(const Mat &data, string str){
+
+    FILE *pOut = fopen(str.c_str(), "w");
+    for(int i = 0; i < data.rows; i++){
+        for(int j = 0; j < data.cols; j++){
+            fprintf(pOut, "%lf", data.ATD(i, j));
+            if(j == data.cols - 1){
+                fprintf(pOut, "\n");
+            } 
+            else{
+                fprintf(pOut, " ");
+            } 
+        }
+    }
+    fclose(pOut);
+}
+
 
 void
 save2txt3ch(const Mat &data, string str, int step){

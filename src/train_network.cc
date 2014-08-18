@@ -17,7 +17,9 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         gradientChecking_FullConnectLayer(CLayers, HiddenLayers, smr, tpx, tpy);
         gradientChecking_SoftmaxLayer(CLayers, HiddenLayers, smr, tpx, tpy);
     }else{
-        cout<<"Network Learning................"<<endl;
+    cout<<"****************************************************************************"<<endl
+        <<"**                       TRAINING NETWORK......                             "<<endl
+        <<"****************************************************************************"<<endl<<endl;
 
         // define the velocity vectors.
         Mat v_smr_W = Mat::zeros(smr.W.rows, smr.W.cols, CV_64FC1);
@@ -56,13 +58,12 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         mkdir(CLayers);
         double lr_w = lrate_w;
         double lr_b = lrate_b;
-        int iter_per_epo = 250;
         double Momentum_w = 0.5;
         double Momentum_b = 0.5;
         for(int epo = 0; epo < training_epochs; epo++){
             for(int k = 0; k < iter_per_epo; k++){
                 if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95;}
-                int randomNum = ((long)rand() + (long)rand()) % (x.size() - batch_size);
+                int randomNum = ((long)rand() + (long)rand()) % (x.size() - batch_size - 1);
                 vector<Mat> batchX;
                 for(int i = 0; i < batch_size; i++){
                     batchX.push_back(x[i + randomNum]);

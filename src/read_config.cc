@@ -203,6 +203,11 @@ readConfigFile(string filepath){
     get_layers_config(str);
 
     is_gradient_checking = get_word_bool(str, "IS_GRADIENT_CHECKING");
+    if(is_gradient_checking){
+        for(int i = 0; i < fcConfig.size(); i++){
+            fcConfig[i].DropoutRate = 1.0;
+        }
+    }
     batch_size = get_word_int(str, "BATCH_SIZE");
     pooling_method = get_word_type(str, "POOLING_METHOD");
     non_linearity = get_word_type(str, "NON_LINEARITY");

@@ -35,3 +35,5 @@ Mat reduce(Mat, int, int);
 Mat divide(Mat, Mat);
 Mat pow(Mat, int);
 double sum1(Mat);
+double max(const Mat&);
+double min(const Mat&);
