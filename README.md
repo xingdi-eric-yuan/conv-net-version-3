@@ -6,7 +6,7 @@ Newly implemented convnet (C++ / OpenCV).
 This is an **EARLY ADOPTERS EDITION**, which is still buggy, I'll post formal version in days.
 
 To run this code, you should have 
-* a cifar-10 dataset;
+* a cifar-10 dataset( put "cifar-10-batches-bin" where this .md file is, you can get it from [HERE](http://www.cs.toronto.edu/~kriz/cifar.html), make sure to download the binary version which suitable for C programs);
 * OpenCV.
 
 ##Compile & Run
