@@ -72,8 +72,8 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
     cout<<"****************************************************************************"<<endl
         <<"**                        READ DATASET COMPLETE                             "<<endl
         <<"****************************************************************************"<<endl<<endl;
-    cout<<"The training data has "<<trainX.size()<<" images, each images has"<<trainX[0].cols<<" columns and "<<trainX[0].rows<<" rows."<<endl;
-    cout<<"The testing data has "<<testX.size()<<" images, each images has"<<testX[0].cols<<" columns and "<<testX[0].rows<<" rows."<<endl;
+    cout<<"The training data has "<<trainX.size()<<" images, each images has "<<trainX[0].cols<<" columns and "<<trainX[0].rows<<" rows."<<endl;
+    cout<<"The testing data has "<<testX.size()<<" images, each images has "<<testX[0].cols<<" columns and "<<testX[0].rows<<" rows."<<endl;
     cout<<"There are "<<trainY.cols<<" training labels and "<<testY.cols<<" testing labels."<<endl<<endl;
 }
 

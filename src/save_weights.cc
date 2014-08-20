@@ -5,7 +5,6 @@ using namespace std;
 
 void 
 save2txt(const Mat &data, string str){
-
     FILE *pOut = fopen(str.c_str(), "w");
     for(int i = 0; i < data.rows; i++){
         for(int j = 0; j < data.cols; j++){
@@ -82,10 +81,10 @@ save2txt(const Mat &data, string str, int step){
 
 void
 mkdir(const vector<Cvl> &CLayers){
-    mkdir("./weight", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    mkdir("weight", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     int layers = CLayers.size();
     for(int i = 0; i < layers; i++){
-        string str = "./weight/cl_" + std::to_string(i);
+        string str = "weight/cl_" + std::to_string(i);
         mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         int kernels = convConfig[i].KernelAmount;
         for(int j = 0; j < kernels; j++){

@@ -29,7 +29,7 @@ run(){
     vector<Cvl> ConvLayers;
     vector<Fcl> HiddenLayers;
     Smr smr;
-    readConfigFile("./config.txt");
+    readConfigFile("config.txt");
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgDim, nsamples);
     // Train network using Back Propogation
     trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr);
