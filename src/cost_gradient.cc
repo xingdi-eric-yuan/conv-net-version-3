@@ -39,6 +39,10 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         }
         if(_factor != 0) tmpacti = tmpacti.mul(1 / _factor);
         factor.push_back(_factor);
+
+//        save2txt(tmpacti, "tmpacti.txt");
+//        save2txt(hLayers[i - 1].W, "hLayer_W.txt");
+//        save2txt(hLayers[i - 1].b, "hLayer_b.txt");
         tmpacti = sigmoid(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0){
             Mat bnl = getBernoulliMatrix(tmpacti.rows, tmpacti.cols, fcConfig[i - 1].DropoutRate);
@@ -57,7 +61,13 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     for(int i = 0; i < nsamples; i++){
         groundTruth.ATD(y.ATD(0, i), i) = 1.0;
     }
+
     double J1 = - sum1(groundTruth.mul(log(p))) / nsamples;
+//    if(J1 >= 5.0){
+//        save2txt(hidden[hidden.size() - 1], "err_x.txt");
+//        save2txt(convolvedX, "convolvedX.txt");
+//        exit(0);
+//    }
     double J2 = sum1(pow(smr.W, 2.0)) * softmaxConfig.WeightDecay / 2;
     double J3 = 0.0; 
     double J4 = 0.0;
@@ -185,7 +195,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     groundTruth.release();
     cpmap.clear();
     locmap.clear();
-    factor.clear();
     acti.clear();
     delta.clear();
     bernoulli.clear();
