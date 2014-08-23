@@ -7,6 +7,7 @@ using namespace cv;
 Scalar Reciprocal(Scalar &);
 Mat Reciprocal(const Mat &);
 Mat sigmoid(const Mat &);
+Mat dsigmoid_a(const Mat &);
 Mat dsigmoid(const Mat &);
 Mat ReLU(const Mat& );
 Mat dReLU(const Mat& );
@@ -27,6 +28,8 @@ Mat convCalc(const Mat&, const Mat&, int);
 // see function kron() in Matlab/Octave
 Mat kron(const Mat&, const Mat&);
 Mat getBernoulliMatrix(int, int, double);
+double matNormalize(Mat &, double, double);
+double matNormalizeUnsign(Mat &, double, double);
 
 // Follows are OpenCV maths
 Mat exp(Mat);
@@ -35,5 +38,5 @@ Mat reduce(Mat, int, int);
 Mat divide(Mat, Mat);
 Mat pow(Mat, int);
 double sum1(Mat);
-double max(const Mat&);
-double min(const Mat&);
+double max(Mat&);
+double min(Mat&);

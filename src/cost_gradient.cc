@@ -26,20 +26,12 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     hidden.push_back(convolvedX);
     acti.push_back(convolvedX);
     vector<Mat> bernoulli;
+    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
+    factor.push_back(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        //tmpacti = Tanh(tmpacti);
-        double _factor = 0.0;
-        double _max = max(tmpacti);
-        double _min = min(tmpacti);
-        if(fabs(_min) > fabs(_max)){
-            _factor = _min / -5.0;
-        }else{
-            _factor = _max / 5.0;
-        }
-        if(_factor != 0) tmpacti = tmpacti.mul(1 / _factor);
+        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
         factor.push_back(_factor);
-
 //        save2txt(tmpacti, "tmpacti.txt");
 //        save2txt(hLayers[i - 1].W, "hLayer_W.txt");
 //        save2txt(hLayers[i - 1].b, "hLayer_b.txt");
@@ -91,18 +83,21 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
 
     // bp - full connected
     vector<Mat> delta(hidden.size());
-    delta[delta.size() -1] = -smr.W.t() * (groundTruth - p);
-    delta[delta.size() -1] = delta[delta.size() -1].mul(dsigmoid(acti[acti.size() - 1]));
-    if(factor[factor.size() - 1] != 0) delta[delta.size() -1] = delta[delta.size() -1].mul(1 / factor[factor.size() - 1]);
-    //delta[delta.size() -1] = delta[delta.size() -1].mul(dTanh(acti[acti.size() - 1]));
+    delta[delta.size() - 1] = -smr.W.t() * (groundTruth - p);
+    delta[delta.size() - 1] = delta[delta.size() -1].mul(dsigmoid_a(acti[acti.size() - 1]));
+//    delta[delta.size() - 1] = delta[delta.size() -1].mul(dsigmoid(delta[delta.size() -1]));
+    delta[delta.size() -1] = delta[delta.size() -1].mul(factor[factor.size() - 1]);
     if(fcConfig[fcConfig.size() - 1].DropoutRate < 1.0) delta[delta.size() - 1] = delta[delta.size() -1].mul(bernoulli[bernoulli.size() - 1]);
     for(int i = delta.size() - 2; i >= 0; i--){
         delta[i] = hLayers[i].W.t() * delta[i + 1];
         if(i > 0){
-            delta[i] = delta[i].mul(dsigmoid(acti[i]));
-            if(factor[i] != 0) delta[i] = delta[i].mul(1 / factor[i]);
-            //delta[i] = delta[i].mul(dTanh(acti[i]));
+            delta[i] = delta[i].mul(dsigmoid_a(acti[i]));
+//            delta[i] = delta[i].mul(dsigmoid(delta[i]));
+            delta[i] = delta[i].mul(factor[i]);
             if(fcConfig[i - 1].DropoutRate < 1.0) delta[i] = delta[i].mul(bernoulli[i - 1]);
+        }
+        else{
+            delta[i] = delta[i].mul(factor[i]);
         } 
     }
     for(int i = fcConfig.size() - 1; i >= 0; i--){

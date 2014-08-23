@@ -23,24 +23,16 @@ resultPredict(const Mat &_x, const vector<Cvl> &CLayers, const vector<Fcl> &hLay
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
+
+    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-
-        double _factor = 0.0;
-        double _max = max(tmpacti);
-        double _min = min(tmpacti);
-        if(fabs(_min) > fabs(_max)){
-            _factor = _min / -5.0;
-        }else{
-            _factor = _max / 5.0;
-        }
-        if(_factor != 0) tmpacti = tmpacti.mul(1 / _factor);
-
+        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
         tmpacti = sigmoid(tmpacti);
-        //tmpacti = Tanh(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0) tmpacti = tmpacti.mul(fcConfig[i - 1].DropoutRate);
         hidden.push_back(tmpacti);
     }
+
     Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
     int result = 0;
     double minValue, maxValue;

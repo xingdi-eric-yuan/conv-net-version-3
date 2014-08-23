@@ -21,28 +21,17 @@ Mat
 sigmoid(const Mat &M){
     return 1.0 / (exp(-M) + 1.0);
 }
-/*
-Mat 
-sigmoid(const Mat &M){
-
-    Mat down = M <= -100.0;
-    Mat up = M >= 100.0;
-    Mat temp(M);
-    for(int i = 0; i < M.rows; i++){
-        for(int j = 0; j < M.cols; j++){
-            if(down.ATD(i, j) == 255) temp.ATD(i, j) = -100.0;
-            if(up.ATD(i, j) == 255) temp.ATD(i, j) = 100.0;
-        }
-    }
-    return 1.0 / (exp(-temp) + 1.0);
-}
-*/
 
 Mat 
-dsigmoid(const Mat &a){
+dsigmoid_a(const Mat &a){
     Mat res = 1.0 - a;
     res = res.mul(a);
     return res;
+}
+
+Mat 
+dsigmoid(const Mat &M){
+    return divide(exp(M), pow((1 + exp(M)), 2));
 }
 
 Mat
@@ -185,6 +174,48 @@ getBernoulliMatrix(int height, int width, double prob){
     return res;
 }
 
+double
+matNormalize(Mat &m, double lower, double upper){
+    double _factor = 0.0;
+    double mid = lower + (upper - lower) / 2.0;
+    double _max = max(m);
+    double _min = min(m);
+    if(is_gradient_checking) return 1;
+    if(_max < upper && _min > lower) return 1;
+    double _mid = _min + (_max - _min) / 2.0;
+
+    if(fabs(_min) > fabs(_max)){
+        _factor = _min / (upper - lower);
+    }else{
+        _factor = _max / (upper - lower);
+    }
+    m = m - _mid + mid;
+    if(_factor != 0){ 
+        m = m.mul(1 / _factor);
+        return 1 / _factor;
+    }else return 1;
+}
+
+double
+matNormalizeUnsign(Mat &m, double lower, double upper){
+    double _factor = 0.0;
+    double _max = max(m);
+    double _min = min(m);
+
+    if(is_gradient_checking) return 1;
+    if(_max < upper && _min > lower) return 1;
+
+    if(fabs(_min) > fabs(_max)){
+        _factor = _min / lower;
+    }else{
+        _factor = _max / upper;
+    }
+    if(_factor != 0){
+        m = m.mul(1 / _factor);
+        return (1 / _factor);
+    }else return 1;
+}
+
 // Follows are OpenCV maths
 Mat 
 exp(Mat src){
@@ -232,7 +263,7 @@ sum1(Mat m){
 }
 
 double
-max(const Mat &m){
+max(Mat &m){
     Point min;
     Point max;
     double minval;
@@ -242,7 +273,7 @@ max(const Mat &m){
 }
 
 double
-min(const Mat &m){
+min(Mat &m){
     Point min;
     Point max;
     double minval;
