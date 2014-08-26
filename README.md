@@ -87,7 +87,7 @@ To run this code, you should have
 * amount of output classes (in **Softmax** Layer)
 
 ####Multi-Layer
-If you are using multiple of same kind of layer, just write layer config one after another. There's [an example config file](https://github.com/xingdi-eric-yuan/conv-net-version-3/blob/master/src/config.txt) inside.
+If you are using multiple of same kind of layer, just write layer config one after another. There's [an example config file](https://github.com/xingdi-eric-yuan/conv-net-version-3/blob/master/config.txt) inside.
 
 ##Structure and Algorithm
 See my several posts about CNNs at [my tech-blog](http://eric-yuan.me).
