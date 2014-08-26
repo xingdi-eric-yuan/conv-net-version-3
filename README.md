@@ -15,12 +15,15 @@ To run this code, you should have
  
 * Run: "./conv" 
 
+* Clean log files: "./conv clean_log"
+
 ##Updates 
 
 * 3-channels images supported.
 * Add Dropout;
 * In conv layers, one can use either 3-channel conv kernels or single-chanel conv kernels (that is to say, whether share weights).
 * Local Response Normalization supported.
+* Use log files dig deeper.
 
 ##File description 
 
@@ -37,6 +40,8 @@ To run this code, you should have
 * **matrix_maths.h & matrix_maths.cc** - matrix maths functions, such as conv2() and rot90()
 
 * **read_data.h & read_data.cc** - this read_data supports only CIFAR-10 dataset
+
+* **get_sample.h & get_sample.cc** - sample from cv::Mat or vector<Mat> data
 
 * **result_predict.h & result_predict.cc** - functions for result predict
 
@@ -60,6 +65,7 @@ To run this code, you should have
 
 ####General Parameters Config
 * if is gradient checking
+* use or not use log (for debugging, should be faster if not using it)
 * batch size
 * pooling method
 * non-linearity method
