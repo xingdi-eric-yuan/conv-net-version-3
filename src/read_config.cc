@@ -208,6 +208,7 @@ readConfigFile(string filepath){
             fcConfig[i].DropoutRate = 1.0;
         }
     }
+    use_log = get_word_bool(str, "USE_LOG");
     batch_size = get_word_int(str, "BATCH_SIZE");
     pooling_method = get_word_type(str, "POOLING_METHOD");
     non_linearity = get_word_type(str, "NON_LINEARITY");
@@ -243,6 +244,7 @@ readConfigFile(string filepath){
     cout<<"WeightDecay = "<<softmaxConfig.WeightDecay<<endl<<endl;
     cout<<"***** general config *****"<<endl;
     cout<<"is_gradient_checking = "<<is_gradient_checking<<endl;
+    cout<<"use_log = "<<use_log<<endl;
     cout<<"batch size = "<<batch_size<<endl;
     cout<<"pooling method = "<<pooling_method<<endl;
     cout<<"non-linearity method = "<<non_linearity<<endl;

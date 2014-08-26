@@ -4,8 +4,9 @@ using namespace cv;
 using namespace std;
 
 void 
-save2txt(const Mat &data, string str){
-    FILE *pOut = fopen(str.c_str(), "w");
+save2txt(const Mat &data, string path, string str){
+    string tmp = path + str;
+    FILE *pOut = fopen(tmp.c_str(), "w");
     for(int i = 0; i < data.rows; i++){
         for(int j = 0; j < data.cols; j++){
             fprintf(pOut, "%lf", data.ATD(i, j));
@@ -20,14 +21,11 @@ save2txt(const Mat &data, string str){
     fclose(pOut);
 }
 
-
 void
-save2txt3ch(const Mat &data, string str, int step){
-    string s = std::to_string(step);
-    str += s;
-    string str_r = str + "_r";
-    string str_g = str + "_g";
-    string str_b = str + "_b";
+save2txt3ch(const Mat &data, string path){
+    string str_r = path + "ch_0";
+    string str_g = path + "ch_1";
+    string str_b = path + "ch_2";
     str_r += ".txt";
     str_g += ".txt";
     str_b += ".txt";
@@ -58,50 +56,20 @@ save2txt3ch(const Mat &data, string str, int step){
 }
 
 void
-save2txt(const Mat &data, string str, int step){
-    string s = std::to_string(step);
-    str += s;
-    string str_r = str + "_r";
-    str_r += ".txt";
-    FILE *pOut_r = fopen(str_r.c_str(), "w");
-    for(int i=0; i<data.rows; i++){
-        for(int j=0; j<data.cols; j++){
-            double tmp = data.ATD(i, j);
-            fprintf(pOut_r, "%lf", tmp);
-            if(j == data.cols - 1){
-                fprintf(pOut_r, "\n");
-            } 
-            else{
-                fprintf(pOut_r, " ");
-            } 
-        }
-    }
-    fclose(pOut_r);
-}
-
-void
-mkdir(const vector<Cvl> &CLayers){
-    mkdir("weight", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+saveConvKernel(const vector<Cvl> &CLayers, string path){
+    string tmp = path + "/conv_kernels";
+    mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     int layers = CLayers.size();
     for(int i = 0; i < layers; i++){
-        string str = "weight/cl_" + std::to_string(i);
+        string str = tmp + "/layer_" + std::to_string(i);
         mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         int kernels = convConfig[i].KernelAmount;
         for(int j = 0; j < kernels; j++){
             string str2 = str + "/kernel_" + std::to_string(j);
             mkdir(str2.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            str2 += "/";
+            if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].W, str2);
+            else save2txt(CLayers[i].layer[j].W, str2, "ch_0.txt");
         }
     }
 }
-
-void
-save2txt(const vector<Cvl> &CLayers, int step){
-    for(int cl = 0; cl < CLayers.size(); cl++){
-        for(int i=0; i<convConfig[cl].KernelAmount; i++){
-            string str = "weight/cl_" + std::to_string(cl) + "/kernel_" + std::to_string(i) + "/epoch_";
-            if(convConfig[cl].is3chKernel) save2txt3ch(CLayers[cl].layer[i].W, str, step);
-            else save2txt(CLayers[cl].layer[i].W, str, step);
-        }
-    }
-}
-

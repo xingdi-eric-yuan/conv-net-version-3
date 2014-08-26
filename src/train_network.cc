@@ -8,11 +8,8 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
 
     if (is_gradient_checking){
         vector<Mat> tpx;
-        tpx.push_back(x[0]);
-        Rect roi = Rect(0, 0, 1, y.rows);
         Mat tpy;
-        y(roi).copyTo(tpy);
-
+        getSample(x, tpx, y, tpy, 1, SAMPLE_COLS);
         gradientChecking_ConvLayer(CLayers, HiddenLayers, smr, tpx, tpy);
         gradientChecking_FullConnectLayer(CLayers, HiddenLayers, smr, tpx, tpy);
         gradientChecking_SoftmaxLayer(CLayers, HiddenLayers, smr, tpx, tpy);
@@ -55,21 +52,25 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             v_cvl_W.push_back(tmpvecW);
             v_cvl_b.push_back(tmpvecb);
         }
-        mkdir(CLayers);
+
+//        mkdir(CLayers);
         double Momentum_w = 0.5;
         double Momentum_b = 0.5;
         double lr_w, lr_b;
         for(int k = 0; k <= iter_per_epo; k++){
+            log_iter = k;
+            string path = "log/iter_" + to_string(log_iter);
+            $$LOG mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); $$_LOG
+
             if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95;}
             vector<Mat> batchX;
             Mat batchY; 
-            getSample(x, batchX, y, batchY, batch_size);
-
-            if(k == 30) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
+            getSample(x, batchX, y, batchY, batch_size, SAMPLE_COLS);
+            if(k == 20) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
             cout<<"iter: "<<k<<", learning step: "<<k;//<<endl;           
             getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
-            lr_w = 0.0;
-            lr_b = 0.0;
+//            lr_w = 0.1;
+//            lr_b = 0.1;
             // softmax update
             lr_w = smr.lr_w / (1 + smr.lr_w * softmaxConfig.WeightDecay * k);
             lr_b = smr.lr_b / (1 + smr.lr_b * softmaxConfig.WeightDecay * k);
@@ -100,8 +101,7 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             }
             batchX.clear();
             batchY.release();
-            if(k % 100 == 0)
-                save2txt(CLayers, k / 100);
+            $$LOG saveConvKernel(CLayers, path); $$_LOG
         }   
         v_smr_W.release();
         v_smr_b.release();

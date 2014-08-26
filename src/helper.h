@@ -16,7 +16,3 @@ Mat concatenateMat(vector<vector<Mat> >&);
 Mat concatenateMat(vector<Mat>&, int );
 
 double getLearningRate(Mat&);
-
-void getSample(vector<Mat>&, vector<Mat>&, int);
-void getSample(Mat&, Mat&, int);
-void getSample(vector<Mat>&, vector<Mat>&, Mat&, Mat&, int);

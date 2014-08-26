@@ -31,7 +31,7 @@ dsigmoid_a(const Mat &a){
 
 Mat 
 dsigmoid(const Mat &M){
-    return divide(exp(M), pow((1 + exp(M)), 2));
+    return divide(exp(M), pow((1.0 + exp(M)), 2.0));
 }
 
 Mat

@@ -9,6 +9,8 @@ SoftmaxLayerConfig softmaxConfig;
 // General parameters
 ///////////////////////////////////
 bool is_gradient_checking = false;
+bool use_log = false;
+int log_iter = 0;
 int batch_size = 1;
 int pooling_method = 0;
 int non_linearity = 2;
@@ -32,6 +34,9 @@ run(){
     readConfigFile("config.txt");
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgDim, nsamples);
     // Train network using Back Propogation
+    if(use_log){
+        mkdir("log", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    }
     trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr);
     if(! is_gradient_checking){
         testNetwork(testX, testY, ConvLayers, HiddenLayers, smr);
@@ -42,7 +47,12 @@ run(){
 
 int 
 main(int argc, char** argv){
-    
+    string str = "clean_log";
+    if(argv[1] && !str.compare(argv[1])){
+        system("rm -rf log");
+        cout<<"Cleaning log ..."<<endl;
+        return 0;
+    }
     long start, end;
     start = clock();
 

@@ -14,6 +14,7 @@
 #include "result_predict.h"
 #include "read_config.h"
 #include "save_weights.h"
+#include "get_sample.h"
 #include "train_network.h"
 #include "weight_init.h"
 #include <vector>
@@ -38,16 +39,21 @@
 #define NL_SIGMOID 0
 #define NL_TANH 1
 #define NL_RELU 2
+// sample
+#define SAMPLE_ROWS 0
+#define SAMPLE_COLS 1
 
 #define ATD at<double>
 #define AT3D at<cv::Vec3d>
 #define elif else if
+#define $$LOG if(use_log && log_iter % 10 == 0){
+#define $$_LOG }
 
 using namespace std;
 using namespace cv;
 
 // Local Response Normalization
-static int lrn_size = 3;
+static int lrn_size = 5;
 static double lrn_scale = 0.0000125;
 static double lrn_beta = 0.75;
 
@@ -59,6 +65,8 @@ extern SoftmaxLayerConfig softmaxConfig;
 // General parameters
 ///////////////////////////////////
 extern bool is_gradient_checking;
+extern bool use_log;
+extern int log_iter;
 extern int batch_size;
 extern int pooling_method;
 extern int non_linearity;
