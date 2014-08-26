@@ -195,6 +195,70 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     bernoulli.clear();
 }
 
+void
+getNetworkLearningRate(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr){
+
+    int nsamples = x.size();
+    // Conv & Pooling
+    unordered_map<string, Mat> cpmap;
+    unordered_map<string, vector<vector<Point> > > locmap;
+    convAndPooling(x, CLayers, cpmap, locmap, false);
+    vector<Mat> P;
+    vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
+    for(int i = 0; i<vecstr.size(); i++){
+        P.push_back(cpmap.at(vecstr[i]));
+    }
+    Mat convolvedX = concatenateMat(P, nsamples);
+    P.clear();
+/*
+    for(int i = 0; i < convConfig.size(); i++){
+        double tmp = 0;
+        if(i == 0){
+            Mat tmpmat = concatenateMat(x, nsamples);
+            cout<<"$$$$$$  "<<tmpmat.rows<<", "<<tmpmat.cols<<endl;
+            tmp = getLearningRate(tmpmat);
+        }else{
+            vector<string> tmpstr = getLayerKey(nsamples, i - 1, KEY_POOL);
+            vector<Mat> tmpvec;
+            for(int k = 0; k < tmpstr.size(); k++){
+                tmpvec.push_back(cpmap.at(tmpstr[k]));
+            }
+            Mat tmpmat = concatenateMat(tmpvec, tmpvec.size());
+            cout<<"&&&&&&  "<<tmpmat.rows<<", "<<tmpmat.cols<<endl;
+            tmp = getLearningRate(tmpmat);
+        }
+        for(int j = 0; j < convConfig[i].KernelAmount; j++){
+            CLayers[i].layer[j].lr_w = tmp;
+            CLayers[i].layer[j].lr_b = tmp;
+            cout<<"conv-layer "<<i<<", kernel num "<<j<<", learning rate = "<<tmp<<endl;
+        }
+    }
+    */
+    // full connected layers
+    vector<Mat> hidden;
+    vector<double> factor;
+    hidden.push_back(convolvedX);
+    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
+    for(int i = 1; i <= fcConfig.size(); i++){
+        Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
+        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
+        tmpacti = sigmoid(tmpacti);
+        hidden.push_back(tmpacti);
+    }
+
+    for(int i = 0; i < fcConfig.size(); i++){
+        hLayers[i].lr_w = getLearningRate(hidden[i]);
+        hLayers[i].lr_b = hLayers[i].lr_w;
+        cout<<"full connected layer "<<i<<", learning rate = "<<hLayers[i].lr_w<<endl;
+    }
+    smr.lr_w = getLearningRate(hidden[hidden.size() - 1]);
+    smr.lr_b = smr.lr_w;    
+    cout<<"softmax layer, learning rate = "<<smr.lr_w<<endl;
+    // destructor
+    cpmap.clear();
+    locmap.clear();
+}
+
 
 
 
