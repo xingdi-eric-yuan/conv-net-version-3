@@ -63,7 +63,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             save2txt(hidden[i], path, tmp);
         }
     $$_LOG
-
     Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
     M -= repeat(reduce(M, 0, CV_REDUCE_MAX), M.rows, 1);
     M = exp(M);
@@ -75,11 +74,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     }
 
     double J1 = - sum1(groundTruth.mul(log(p))) / nsamples;
-//    if(J1 >= 5.0){
-//        save2txt(hidden[hidden.size() - 1], "err_x.txt");
-//        save2txt(convolvedX, "convolvedX.txt");
-//        exit(0);
-//    }
     double J2 = sum1(pow(smr.W, 2.0)) * softmaxConfig.WeightDecay / 2;
     double J3 = 0.0; 
     double J4 = 0.0;
@@ -100,7 +94,11 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     // bp - softmax
     smr.Wgrad =  - (groundTruth - p) * hidden[hidden.size() - 1].t() / nsamples + softmaxConfig.WeightDecay * smr.W;
     smr.bgrad = - reduce((groundTruth - p), 1, CV_REDUCE_SUM) / nsamples;
-
+    $$LOG
+        tmp = path + "gradient";
+        mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        save2txt(smr.Wgrad, tmp, "/smr_wgrad.txt");
+    $$_LOG
     // bp - full connected
     vector<Mat> delta(hidden.size());
     delta[delta.size() - 1] = -smr.W.t() * (groundTruth - p);
@@ -120,11 +118,24 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             delta[i] = delta[i].mul(factor[i]);
         } 
     }
+    $$LOG
+        for(int i = 0; i < delta.size(); i++){   
+            tmp = "delta_" + to_string(i) + ".txt";
+            save2txt(delta[i], path, tmp);
+        }
+    $$_LOG
+
     for(int i = fcConfig.size() - 1; i >= 0; i--){
         hLayers[i].Wgrad = delta[i + 1] * (hidden[i]).t();
         hLayers[i].Wgrad = hLayers[i].Wgrad / nsamples + fcConfig[i].WeightDecay * hLayers[i].W;
         hLayers[i].bgrad = reduce(delta[i + 1], 1, CV_REDUCE_SUM) / nsamples;
     }
+    $$LOG
+        for(int i = 0; i < fcConfig.size(); i++){   
+            tmp = "gradient/fc_" + to_string(i) + "_wgrad.txt";
+            save2txt(hLayers[i].Wgrad, path, tmp);
+        }
+    $$_LOG
     //bp - Conv layer
     hashDelta(delta[0], cpmap, CLayers);
     for(int cl = CLayers.size() - 1; cl >= 0; cl --){
@@ -204,6 +215,18 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             tpgradW.release();
         }
     }
+
+    $$LOG 
+        tmp = path + "gradient/";
+        saveConvKernelGradient(CLayers, tmp);
+//        the map is too large to show...
+//        tmp = path + "map";
+//        mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+//        tmp += "/";
+//        for(unordered_map<string, Mat>::iterator _it = cpmap.begin(); _it != cpmap.end(); _it++) {
+//            save2txt3ch(_it -> second, tmp, _it -> first);
+//        } 
+    $$_LOG
     // destructor
     p.release();
     M.release();

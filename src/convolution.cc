@@ -210,8 +210,6 @@ dlocalResponseNorm(const unordered_map<string, Mat> &map, string str){
     return res;
 }
 
-
-
 void 
 convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers, 
                 unordered_map<string, Mat> &map, 

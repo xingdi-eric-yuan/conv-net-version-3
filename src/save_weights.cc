@@ -22,10 +22,10 @@ save2txt(const Mat &data, string path, string str){
 }
 
 void
-save2txt3ch(const Mat &data, string path){
-    string str_r = path + "ch_0";
-    string str_g = path + "ch_1";
-    string str_b = path + "ch_2";
+save2txt3ch(const Mat &data, string path, string str){
+    string str_r = path + str + "ch_0";
+    string str_g = path + str + "ch_1";
+    string str_b = path + str + "ch_2";
     str_r += ".txt";
     str_g += ".txt";
     str_b += ".txt";
@@ -68,8 +68,26 @@ saveConvKernel(const vector<Cvl> &CLayers, string path){
             string str2 = str + "/kernel_" + std::to_string(j);
             mkdir(str2.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
             str2 += "/";
-            if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].W, str2);
+            if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].W, str2, "");
             else save2txt(CLayers[i].layer[j].W, str2, "ch_0.txt");
+        }
+    }
+}
+void
+saveConvKernelGradient(const vector<Cvl> &CLayers, string path){
+    string tmp = path + "/kernels_gradient";
+    mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    int layers = CLayers.size();
+    for(int i = 0; i < layers; i++){
+        string str = tmp + "/layer_" + std::to_string(i);
+        mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        int kernels = convConfig[i].KernelAmount;
+        for(int j = 0; j < kernels; j++){
+            string str2 = str + "/kernel_" + std::to_string(j);
+            mkdir(str2.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            str2 += "/";
+            if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].Wgrad, str2, "");
+            else save2txt(CLayers[i].layer[j].Wgrad, str2, "ch_0.txt");
         }
     }
 }
