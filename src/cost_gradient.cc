@@ -81,11 +81,14 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         J3 += sum1(pow(hLayers[hl].W, 2.0)) * fcConfig[hl].WeightDecay / 2;
     }
     for(int cl = 0; cl < CLayers.size(); cl++){
-        for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-            if(convConfig[cl].is3chKernel)
+        if(convConfig[cl].is3chKernel){
+            for(int i = 0; i < convConfig[cl].KernelAmount; i++){
                 J4 += sum1(pow(CLayers[cl].layer[i].W, 2.0)) * convConfig[cl].WeightDecay / 2;
-            else 
+            }
+        }else{
+            for(int i = 0; i < convConfig[cl].KernelAmount; i++){
                 J4 += 3 * sum1(pow(CLayers[cl].layer[i].W, 2.0)) * convConfig[cl].WeightDecay / 2;
+            }
         }
     }
     smr.cost = J1 + J2 + J3 + J4;
@@ -175,7 +178,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                         cpmap[strd] = zero;
                     }
                     int currentKernel = getCurrentKernelNum(prev[i]);
-                     cpmap.at(strd) += convCalc(cpmap.at(prev[i]), CLayers[cl].layer[currentKernel].W, CONV_FULL);
+                    cpmap.at(strd) += convCalc(cpmap.at(prev[i]), CLayers[cl].layer[currentKernel].W, CONV_FULL);
                 }
             }
         }
@@ -191,7 +194,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                     string strprev = getPreviousLayerKey(convKey[m], KEY_POOL);
                     tpgradW += convCalc(cpmap.at(strprev), temp, CONV_VALID);
                 }
-                tpgradb += sum(cpmap.at(convKey[m]));
+                tpgradb += sum(temp);
             }
             if(convConfig[cl].is3chKernel){
                 CLayers[cl].layer[j].Wgrad = tpgradW / nsamples + convConfig[cl].WeightDecay * CLayers[cl].layer[j].W;

@@ -52,8 +52,6 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             v_cvl_W.push_back(tmpvecW);
             v_cvl_b.push_back(tmpvecb);
         }
-
-//        mkdir(CLayers);
         double Momentum_w = 0.5;
         double Momentum_b = 0.5;
         double lr_w, lr_b;
@@ -69,8 +67,6 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             if(k == 20) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
             cout<<"iter: "<<k<<", learning step: "<<k;//<<endl;           
             getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
-//            lr_w = 0.1;
-//            lr_b = 0.1;
             // softmax update
             lr_w = smr.lr_w / (1 + smr.lr_w * softmaxConfig.WeightDecay * k);
             lr_b = smr.lr_b / (1 + smr.lr_b * softmaxConfig.WeightDecay * k);
@@ -90,7 +86,6 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             // convolutional layer update
             for(int cl = 0; cl < CLayers.size(); cl++){
                 for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-
                     lr_w = CLayers[cl].layer[i].lr_w / (1 + CLayers[cl].layer[i].lr_w * convConfig[i].WeightDecay * k);
                     lr_b = CLayers[cl].layer[i].lr_b / (1 + CLayers[cl].layer[i].lr_b * convConfig[i].WeightDecay * k);
                     v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum_w + lr_w * CLayers[cl].layer[i].Wgrad;                        
