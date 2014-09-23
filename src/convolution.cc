@@ -50,7 +50,7 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
     Mat newM;
     if(remX == 0 && remY == 0) M.copyTo(newM);
     else{
-        Rect roi = Rect(remX, remY, M.cols - remX, M.rows - remY);
+        Rect roi = Rect(remX / 2, remY / 2, M.cols - remX, M.rows - remY);
         M(roi).copyTo(newM);
     }
     Mat res = Mat::zeros(newM.rows / pVert, newM.cols / pHori, CV_64FC3);
