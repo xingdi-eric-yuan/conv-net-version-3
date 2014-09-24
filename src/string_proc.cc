@@ -12,6 +12,8 @@ toKey(string &str, int keyType){
     elif(keyType == KEY_POOL) str += "P";
     elif(keyType == KEY_DELTA) str += "PD";
     elif(keyType == KEY_UP_DELTA) str += "PUD";
+    elif(keyType == KEY_HESSIAN) str += "PH";
+    elif(keyType == KEY_UP_HESSIAN) str += "PUH";
 }
 
 vector<string>
@@ -102,6 +104,10 @@ getLayerKey(int nsamples, int layer, int keyType){
                         s3 += "PD";
                     }elif(keyType == KEY_UP_DELTA){
                         s3 += "PUD";
+                    }elif(keyType == KEY_HESSIAN){
+                        s3 += "PH";
+                    }elif(keyType == KEY_UP_HESSIAN){
+                        s3 += "PUH";
                     }
                 }
                 tmpvecstr.push_back(s3);

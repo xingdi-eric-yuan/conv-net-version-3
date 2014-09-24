@@ -24,6 +24,7 @@ To run this code, you should have
 * In conv layers, one can use either 3-channel conv kernels or single-chanel conv kernels (that is to say, whether share weights).
 * Local Response Normalization supported.
 * Use log files dig deeper.
+* Use second order derivative back-prop to alter learning rate (unfinished).
 
 ##File description 
 

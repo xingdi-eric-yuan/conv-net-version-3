@@ -35,6 +35,8 @@
 #define KEY_POOL 1
 #define KEY_DELTA 2
 #define KEY_UP_DELTA 3
+#define KEY_HESSIAN 4
+#define KEY_UP_HESSIAN 5
 // non-linearity
 #define NL_SIGMOID 0
 #define NL_TANH 1
@@ -42,6 +44,9 @@
 // sample
 #define SAMPLE_ROWS 0
 #define SAMPLE_COLS 1
+// hash
+#define HASH_DELTA 0
+#define HASH_HESSIAN 1
 
 #define ATD at<double>
 #define AT3D at<cv::Vec3d>

@@ -290,7 +290,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
 }
 
 void
-hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers){
+hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers, int type){
     int nsamples = src.cols;
     for(int m = 0; m < nsamples; m ++){
         string s1 = "X" + i2str(m);
@@ -301,7 +301,8 @@ hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers)
                 for(int k = 0; k < convConfig[i].KernelAmount; k ++){
                     string s3 = s2 + "K" + i2str(k) + "P";
                     if(i == CLayers.size() - 1){
-                        s3 += "D";
+                        if(type == HASH_DELTA) s3 += "D";
+                        elif(type == HASH_HESSIAN) s3 += "H";
                     }
                     vecstr.push_back(s3);
                 }
@@ -312,7 +313,8 @@ hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers)
                     for(int k = 0; k < convConfig[i].KernelAmount; k ++){
                         string s3 = s2 + "K" + i2str(k) + "P";
                         if(i == CLayers.size() - 1){
-                            s3 += "D";
+                            if(type == HASH_DELTA) s3 += "D";
+                            elif(type == HASH_HESSIAN) s3 += "H";
                         }
                         vec2.push_back(s3);
                     }

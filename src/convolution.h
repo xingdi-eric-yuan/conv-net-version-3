@@ -21,4 +21,4 @@ void convAndPooling(const vector<Mat> &, const vector<Cvl> &,
                 unordered_map<string, Mat> &, 
                 unordered_map<string, vector<vector<Point> > > &, bool);
 
-void hashDelta(const Mat &, unordered_map<string, Mat> &, vector<Cvl> &);
+void hashDelta(const Mat &, unordered_map<string, Mat> &, vector<Cvl> &, int);

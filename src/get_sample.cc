@@ -12,7 +12,10 @@ getSample(vector<Mat>& src, vector<Mat>& dst, int _size){
         }
         return;
     }
-    int randomNum = ((long)rand() + (long)rand()) % (src.size() - _size - 1);
+    Mat m = Mat::ones(1, 1, CV_64FC1);
+    randu(m, Scalar(0.0), Scalar(1.0));
+    m *= (_size - 1);
+    int randomNum = int(m.ATD(0, 0));
     for(int i = 0; i < _size; i++){
         dst.push_back(src[i + randomNum]);
     }
@@ -26,7 +29,10 @@ getSample(Mat& src, Mat& dst, int _size, int _type){
             src(roi).copyTo(dst);
             return;
         }
-        int randomNum = ((long)rand() + (long)rand()) % (src.rows - _size - 1);
+        Mat m = Mat::ones(1, 1, CV_64FC1);
+        randu(m, Scalar(0.0), Scalar(1.0));
+        m *= (src.rows - _size - 1);
+        int randomNum = int(m.ATD(0, 0));
         Rect roi = Rect(0, randomNum, src.cols, _size);
         src(roi).copyTo(dst);
     }else{
@@ -35,7 +41,10 @@ getSample(Mat& src, Mat& dst, int _size, int _type){
             src(roi).copyTo(dst);
             return;
         }
-        int randomNum = ((long)rand() + (long)rand()) % (src.cols - _size - 1);
+        Mat m = Mat::ones(1, 1, CV_64FC1);
+        randu(m, Scalar(0.0), Scalar(1.0));
+        m *= (src.cols - _size - 1);
+        int randomNum = int(m.ATD(0, 0));
         Rect roi = Rect(randomNum, 0, _size, src.rows);
         src(roi).copyTo(dst);
     }
@@ -53,7 +62,10 @@ getSample(vector<Mat>& src1, vector<Mat>& dst1, Mat& src2, Mat& dst2, int _size,
             src2(roi).copyTo(dst2);
             return;
         }
-        int randomNum = ((long)rand() + (long)rand()) % (src2.rows - _size - 1);
+        Mat m = Mat::ones(1, 1, CV_64FC1);
+        randu(m, Scalar(0.0), Scalar(1.0));
+        m *= (src2.rows - _size - 1);
+        int randomNum = int(m.ATD(0, 0));
         for(int i = 0; i < _size; i++){
             dst1.push_back(src1[i + randomNum]);
         }
@@ -68,7 +80,10 @@ getSample(vector<Mat>& src1, vector<Mat>& dst1, Mat& src2, Mat& dst2, int _size,
             src2(roi).copyTo(dst2);
             return;
         }
-        int randomNum = ((long)rand() + (long)rand()) % (src2.cols - _size - 1);
+        Mat m = Mat::ones(1, 1, CV_64FC1);
+        randu(m, Scalar(0.0), Scalar(1.0));
+        m *= (src2.cols - _size - 1);
+        int randomNum = int(m.ATD(0, 0));
         for(int i = 0; i < _size; i++){
             dst1.push_back(src1[i + randomNum]);
         }
