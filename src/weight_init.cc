@@ -11,14 +11,16 @@ weightRandomInit(ConvK &convk, int width, bool is3chKernel){
         convk.b = Scalar(0.0, 0.0, 0.0);
         convk.Wgrad = Mat::zeros(width, width, CV_64FC3);
         convk.bgrad = Scalar(0.0, 0.0, 0.0);
-        convk.d2 = Mat::zeros(convk.W.size(), CV_64FC3);
+        convk.Wd2 = Mat::zeros(convk.W.size(), CV_64FC3);
+        convk.bd2 = Scalar(0.0, 0.0, 0.0);
     }else{
         convk.W = Mat::ones(width, width, CV_64FC1);
         randu(convk.W, Scalar(-1.0), Scalar(1.0));
         convk.b = Scalar(0.0);
         convk.Wgrad = Mat::zeros(width, width, CV_64FC1);
         convk.bgrad = Scalar(0.0);
-        convk.d2 = Mat::zeros(convk.W.size(), CV_64FC1);
+        convk.Wd2 = Mat::zeros(convk.W.size(), CV_64FC1);
+        convk.bd2 = Scalar(0.0);
     }
     double epsilon = 0.12;
     convk.W = convk.W * epsilon;
@@ -33,7 +35,8 @@ weightRandomInit(Fcl &ntw, int inputsize, int hiddensize){
     ntw.b = Mat::zeros(hiddensize, 1, CV_64FC1);
     ntw.Wgrad = Mat::zeros(hiddensize, inputsize, CV_64FC1);
     ntw.bgrad = Mat::zeros(hiddensize, 1, CV_64FC1);
-    ntw.d2 = Mat::zeros(ntw.W.size(), CV_64FC1);
+    ntw.Wd2 = Mat::zeros(ntw.W.size(), CV_64FC1);
+    ntw.bd2 = Mat::zeros(ntw.b.size(), CV_64FC1);
 }
 
 void 
@@ -46,7 +49,8 @@ weightRandomInit(Smr &smr, int nclasses, int nfeatures){
     smr.cost = 0.0;
     smr.Wgrad = Mat::zeros(nclasses, nfeatures, CV_64FC1);
     smr.bgrad = Mat::zeros(nclasses, 1, CV_64FC1);
-    smr.d2 = Mat::zeros(smr.W.size(), CV_64FC1);
+    smr.Wd2 = Mat::zeros(smr.W.size(), CV_64FC1);
+    smr.bd2 = Mat::zeros(smr.b.size(), CV_64FC1);
 }
 
 void

@@ -98,15 +98,15 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     // bp - softmax
     smr.Wgrad =  - (groundTruth - p) * hidden[hidden.size() - 1].t() / nsamples + softmaxConfig.WeightDecay * smr.W;
     smr.bgrad = - reduce((groundTruth - p), 1, CV_REDUCE_SUM) / nsamples;
-    Mat one = Mat::eye(p.size(), CV_64FC1);
-    smr.d2 = one * pow(hidden[hidden.size() - 1].t(), 2.0);
-    smr.d2 = smr.d2 / nsamples + softmaxConfig.WeightDecay;
+    smr.Wd2 = pow((groundTruth - p), 2.0) * pow(hidden[hidden.size() - 1].t(), 2.0);
+    smr.Wd2 = smr.Wd2 / nsamples + softmaxConfig.WeightDecay;
+    smr.bd2 = reduce(pow((groundTruth - p), 2.0), 1, CV_REDUCE_SUM) / nsamples;
 
     $$LOG
         tmp = path + "gradient";
         mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         save2txt(smr.Wgrad, tmp, "/smr_wgrad.txt");
-        save2txt(smr.d2, tmp, "/smr_d2.txt");
+        save2txt(smr.Wd2, tmp, "/smr_d2.txt");
     $$_LOG
     // bp - full connected
     vector<Mat> delta(hidden.size());
@@ -115,7 +115,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
 //    delta[delta.size() - 1] = delta[delta.size() -1].mul(dsigmoid_a(acti[acti.size() - 1]));
     delta[delta.size() - 1] = delta[delta.size() -1].mul(dReLU(nonlin[nonlin.size() -1]));
     delta[delta.size() - 1] = delta[delta.size() -1].mul(factor[factor.size() - 1]);
-    deltad2[deltad2.size() - 1] = pow(smr.W.t(), 2) * one;
+    deltad2[deltad2.size() - 1] = pow(smr.W.t(), 2) * pow((groundTruth - p), 2.0);
     deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(dReLU(nonlin[nonlin.size() -1]), 2.0));
     deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(factor[factor.size() - 1], 2.0));
 
@@ -153,7 +153,8 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         hLayers[i].Wgrad = delta[i + 1] * (hidden[i]).t();
         hLayers[i].Wgrad = hLayers[i].Wgrad / nsamples + fcConfig[i].WeightDecay * hLayers[i].W;
         hLayers[i].bgrad = reduce(delta[i + 1], 1, CV_REDUCE_SUM) / nsamples;
-        hLayers[i].d2 = deltad2[i + 1] * pow((hidden[i]).t(), 2.0) / nsamples + fcConfig[i].WeightDecay;
+        hLayers[i].Wd2 = deltad2[i + 1] * pow((hidden[i]).t(), 2.0) / nsamples + fcConfig[i].WeightDecay;
+        hLayers[i].bd2 = reduce(deltad2[i + 1], 1, CV_REDUCE_SUM) / nsamples;
     }
     $$LOG
         for(int i = 0; i < fcConfig.size(); i++){   
@@ -162,7 +163,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         }
         for(int i = 0; i < fcConfig.size(); i++){   
             tmp = "gradient/fc_" + to_string(i) + "_d2.txt";
-            save2txt(hLayers[i].d2, path, tmp);
+            save2txt(hLayers[i].Wd2, path, tmp);
         }
     $$_LOG
 
@@ -231,7 +232,8 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
         for(int j = 0; j < convConfig[cl].KernelAmount; j ++){
             Mat tpgradW = Mat::zeros(convConfig[cl].KernelSize, convConfig[cl].KernelSize, CV_64FC3);
             Scalar tpgradb = Scalar(0.0, 0.0, 0.0);
-            Mat tpd2 = Mat::zeros(tpgradW.size(), CV_64FC3);
+            Mat tpWd2 = Mat::zeros(tpgradW.size(), CV_64FC3);
+            Scalar tpbd2 = Scalar(0.0, 0.0, 0.0);
             vector<string> convKey = getKeys(nsamples, cl, j, KEY_UP_DELTA);
             for(int m = 0; m < convKey.size(); m ++){
                 Mat temp = rot90(cpmap.at(convKey[m]), 2);
@@ -247,37 +249,44 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             for(int m = 0; m < convKey2.size(); m ++){
                 Mat temp = rot90(cpmap.at(convKey2[m]), 2);
                 if(cl == 0){
-                    tpd2 += convCalc(pow(x[getSampleNum(convKey2[m])], 2.0), temp, CONV_VALID);
+                    tpWd2 += convCalc(pow(x[getSampleNum(convKey2[m])], 2.0), temp, CONV_VALID);
                 }else{
                     string strprev = getPreviousLayerKey(convKey2[m], KEY_POOL);
-                    tpd2 += convCalc(pow(cpmap.at(strprev), 2.0), temp, CONV_VALID);
+                    tpWd2 += convCalc(pow(cpmap.at(strprev), 2.0), temp, CONV_VALID);
                 }
+                tpbd2 +=sum(temp);
             }
             if(convConfig[cl].is3chKernel){
                 CLayers[cl].layer[j].Wgrad = tpgradW / nsamples + convConfig[cl].WeightDecay * CLayers[cl].layer[j].W;
                 CLayers[cl].layer[j].bgrad = tpgradb.mul(1 / nsamples);
-                CLayers[cl].layer[j].d2 = tpd2 / nsamples + convConfig[cl].WeightDecay;
+                CLayers[cl].layer[j].Wd2 = tpWd2 / nsamples + convConfig[cl].WeightDecay;
+                CLayers[cl].layer[j].bd2 = tpbd2.mul(1 / nsamples);
             }else{
                 vector<Mat> _tpgradWs;
-                vector<Mat> _tpd2s;
+                vector<Mat> _tpWd2s;
                 split(tpgradW, _tpgradWs);
-                split(tpd2, _tpd2s);
+                split(tpWd2, _tpWd2s);
                 Mat _bufferW = Mat::zeros(convConfig[cl].KernelSize, convConfig[cl].KernelSize, CV_64FC1);
-                Mat _bufferd2 = Mat::zeros(_bufferW.size(), CV_64FC1);
+                Mat _bufferWd2 = Mat::zeros(_bufferW.size(), CV_64FC1);
                 double _bufferb = 0.0;
+                double _bufferbd2 = 0.0;
                 for(int ch = 0; ch < _tpgradWs.size(); ch++){
                     _bufferW += _tpgradWs[ch];
-                    _bufferd2 += _tpd2s[ch];
+                    _bufferWd2 += _tpWd2s[ch];
                     _bufferb += tpgradb[ch];
+                    _bufferbd2 += tpbd2[ch];
                 }
                 _bufferW = _bufferW / nsamples + convConfig[cl].WeightDecay * _tpgradWs.size() * CLayers[cl].layer[j].W;
-                _bufferd2 = _bufferd2 / nsamples + convConfig[cl].WeightDecay * _tpd2s.size();
+                _bufferWd2 = _bufferWd2 / nsamples + convConfig[cl].WeightDecay * _tpWd2s.size();
                 _bufferb = _bufferb / nsamples;
+                _bufferbd2 = _bufferbd2 / nsamples;
                 CLayers[cl].layer[j].Wgrad = _bufferW;
-                CLayers[cl].layer[j].d2 = _bufferd2;
+                CLayers[cl].layer[j].Wd2 = _bufferWd2;
                 CLayers[cl].layer[j].bgrad = Scalar(_bufferb);
+                CLayers[cl].layer[j].bd2 = Scalar(_bufferbd2);
                 _tpgradWs.clear();
-                _tpd2s.clear();
+                _tpWd2s.clear();
+                _bufferWd2.release();
                 _bufferW.release();
             }
             tpgradW.release();

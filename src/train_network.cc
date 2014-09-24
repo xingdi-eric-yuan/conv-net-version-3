@@ -21,49 +21,60 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         // define the velocity vectors.
         Mat v_smr_W = Mat::zeros(smr.W.size(), CV_64FC1);
         Mat v_smr_b = Mat::zeros(smr.b.size(), CV_64FC1);
-        Mat smrd2 = Mat::zeros(v_smr_W.size(), CV_64FC1);
+        Mat smrWd2 = Mat::zeros(smr.W.size(), CV_64FC1);
+        Mat smrbd2 = Mat::zeros(smr.b.size(), CV_64FC1);
 
         vector<Mat> v_hl_W;
         vector<Mat> v_hl_b;
-        vector<Mat> hld2;
+        vector<Mat> hlWd2;
+        vector<Mat> hlbd2;
         for(int i = 0; i < HiddenLayers.size(); i ++){
             Mat tempW = Mat::zeros(HiddenLayers[i].W.size(), CV_64FC1);
             Mat tempb = Mat::zeros(HiddenLayers[i].b.size(), CV_64FC1);
-            Mat tempd2 = Mat::zeros(tempW.size(), CV_64FC1);
+            Mat tempWd2 = Mat::zeros(tempW.size(), CV_64FC1);
+            Mat tempbd2 = Mat::zeros(tempb.size(), CV_64FC1);
             v_hl_W.push_back(tempW);
             v_hl_b.push_back(tempb);
-            hld2.push_back(tempd2);
+            hlWd2.push_back(tempWd2);
+            hlbd2.push_back(tempbd2);
         }
         
         vector<vector<Mat> > v_cvl_W;
         vector<vector<Scalar> > v_cvl_b;
-        vector<vector<Mat> > cvld2;
+        vector<vector<Mat> > cvlWd2;
+        vector<vector<Scalar> > cvlbd2;
         for(int cl = 0; cl < CLayers.size(); cl++){
             vector<Mat> tmpvecW;
             vector<Scalar> tmpvecb;
-            vector<Mat> tmpvecd2;
+            vector<Mat> tmpvecWd2;
+            vector<Scalar> tmpvecbd2;
             if(convConfig[cl].is3chKernel){
                 for(int i = 0; i < convConfig[cl].KernelAmount; i ++){
                     Mat tempW = Mat::zeros(CLayers[cl].layer[i].W.size(), CV_64FC3);
                     Scalar tempb = Scalar(0.0, 0.0, 0.0);
-                    Mat tempd2 = Mat::zeros(tempW.size(), CV_64FC3);
+                    Mat tempWd2 = Mat::zeros(tempW.size(), CV_64FC3);
+                    Scalar tempbd2 = Scalar(0.0, 0.0, 0.0);
                     tmpvecW.push_back(tempW);
                     tmpvecb.push_back(tempb);
-                    tmpvecd2.push_back(tempd2);
+                    tmpvecWd2.push_back(tempWd2);
+                    tmpvecbd2.push_back(tempbd2);
                 }
             }else{
                 for(int i = 0; i < convConfig[cl].KernelAmount; i ++){
                     Mat tempW = Mat::zeros(CLayers[cl].layer[i].W.size(), CV_64FC1);
                     Scalar tempb = Scalar(0.0);
-                    Mat tempd2 = Mat::zeros(tempW.size(), CV_64FC1);
+                    Mat tempWd2 = Mat::zeros(tempW.size(), CV_64FC1);
+                    Scalar tempbd2 = Scalar(0.0);
                     tmpvecW.push_back(tempW);
                     tmpvecb.push_back(tempb);
-                    tmpvecd2.push_back(tempd2);
+                    tmpvecWd2.push_back(tempWd2);
+                    tmpvecbd2.push_back(tempbd2);
                 }
             }
             v_cvl_W.push_back(tmpvecW);
             v_cvl_b.push_back(tmpvecb);
-            cvld2.push_back(tmpvecd2);
+            cvlWd2.push_back(tmpvecWd2);
+            cvlbd2.push_back(tmpvecbd2);
         }
         double Momentum_w = 0.5;
         double Momentum_b = 0.5;
@@ -71,8 +82,11 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         double lr_w_global = lrate_w;
         double lr_b_global = lrate_b;
         Mat lr_w;
-        double lr_b = lr_b_global;
+        Mat lr_b;
+        Scalar lr_b_s;
+        //double lr_b = lr_b_global;
         double mu = 0.3;
+        Scalar mu_s = Scalar(mu, mu, mu);
         for(int k = 0; k <= iter_per_epo; k++){
             log_iter = k;
             string path = "log/iter_" + to_string(log_iter);
@@ -86,16 +100,20 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             cout<<"iter: "<<k<<", learning step: "<<k;//<<endl;           
             getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
             // softmax update
-            smrd2 = Momentum_d2 * smrd2 + (1.0 - Momentum_d2) * smr.d2;
-            lr_w = lr_w_global / (smrd2 + mu);
+            smrWd2 = Momentum_d2 * smrWd2 + (1.0 - Momentum_d2) * smr.Wd2;
+            smrbd2 = Momentum_d2 * smrbd2 + (1.0 - Momentum_d2) * smr.bd2;
+            lr_w = lr_w_global / (smrWd2 + mu);
+            lr_b = lr_b_global / (smrbd2 + mu);
             v_smr_W = v_smr_W * Momentum_w + smr.Wgrad.mul(lr_w);
             v_smr_b = v_smr_b * Momentum_b + smr.bgrad.mul(lr_b);
             smr.W -= v_smr_W;
             smr.b -= v_smr_b;
             // full-connected layer update
             for(int i = 0; i < HiddenLayers.size(); i++){
-                hld2[i] = Momentum_d2 * hld2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].d2;
-                lr_w = lr_w_global / (hld2[i] + mu);
+                hlWd2[i] = Momentum_d2 * hlWd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].Wd2;
+                hlbd2[i] = Momentum_d2 * hlbd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].bd2;
+                lr_w = lr_w_global / (hlWd2[i] + mu);
+                lr_b = lr_b_global / (hlbd2[i] + mu);
                 v_hl_W[i] = v_hl_W[i] * Momentum_w + HiddenLayers[i].Wgrad.mul(lr_w);
                 v_hl_b[i] = v_hl_b[i] * Momentum_b + HiddenLayers[i].bgrad.mul(lr_b);
                 HiddenLayers[i].W -= v_hl_W[i];
@@ -104,10 +122,12 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
             // convolutional layer update
             for(int cl = 0; cl < CLayers.size(); cl++){
                 for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-                    cvld2[cl][i] = Momentum_d2 * cvld2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].d2;
-                    lr_w = lr_w_global / (cvld2[cl][i] + mu);
+                    cvlWd2[cl][i] = Momentum_d2 * cvlWd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].Wd2;
+                    cvlbd2[cl][i] = Momentum_d2 * cvlbd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].bd2;
+                    lr_w = lr_w_global / (cvlWd2[cl][i] + mu);
+                    lr_b_s = lr_b_global / (cvlbd2[cl][i] + mu_s);
                     v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum_w + CLayers[cl].layer[i].Wgrad.mul(lr_w);                        
-                    v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum_b + CLayers[cl].layer[i].bgrad.mul(lr_b);
+                    v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum_b + CLayers[cl].layer[i].bgrad.mul(lr_b_s);
                     CLayers[cl].layer[i].W -= v_cvl_W[cl][i];
                     CLayers[cl].layer[i].b -= v_cvl_b[cl][i];
                 }
@@ -122,9 +142,9 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         v_hl_b.clear();
         v_cvl_W.clear();
         v_cvl_b.clear();
-        smrd2.release();
-        hld2.clear();
-        cvld2.clear();
+        smrWd2.release();
+        hlWd2.clear();
+        cvlWd2.clear();
     }
 }
 

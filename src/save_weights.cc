@@ -88,8 +88,8 @@ saveConvKernelGradient(const vector<Cvl> &CLayers, string path){
             str2 += "/";
             if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].Wgrad, str2, "");
             else save2txt(CLayers[i].layer[j].Wgrad, str2, "ch_0.txt");
-            if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].d2, str2, "d2_");
-            else save2txt(CLayers[i].layer[j].d2, str2, "d2_ch_0.txt");
+            if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].Wd2, str2, "Wd2_");
+            else save2txt(CLayers[i].layer[j].Wd2, str2, "Wd2_ch_0.txt");
         }
     }
 }
