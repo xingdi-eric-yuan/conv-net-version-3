@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 Scalar 
-Reciprocal(Scalar &s){
+Reciprocal(const Scalar &s){
     Scalar res = Scalar(1.0, 1.0, 1.0);
     for(int i = 0; i < 3; i++){
         res[i] = res[i] / s[i];
@@ -14,8 +14,13 @@ Reciprocal(Scalar &s){
 
 Mat 
 Reciprocal(const Mat &M){
-    return 1.0 / M;
+    if(M.channels() == 1) return 1.0 / M;
+    else{
+        Mat one = Mat(M.size(), CV_64FC3, Scalar(1.0, 1.0, 1.0));
+        return divide(one, M);
+    }
 }
+
 
 Mat 
 sigmoid(const Mat &M){
@@ -175,13 +180,14 @@ getBernoulliMatrix(int height, int width, double prob){
 }
 
 double
-matNormalize(Mat &m, double lower, double upper){
+matNormalize(const Mat &mat, Mat *out, double lower, double upper){
+    Mat m(mat);
     double _factor = 0.0;
     double mid = lower + (upper - lower) / 2.0;
     double _max = max(m);
     double _min = min(m);
-    if(is_gradient_checking) return 1;
-    if(_max < upper && _min > lower) return 1;
+    if(is_gradient_checking) {m.copyTo(*out); return 1;}
+    if(_max < upper && _min > lower) {m.copyTo(*out); return 1;}
     double _mid = _min + (_max - _min) / 2.0;
 
     if(fabs(_min) > fabs(_max)){
@@ -191,69 +197,74 @@ matNormalize(Mat &m, double lower, double upper){
     }
     m = m - _mid + mid;
     if(_factor != 0){ 
-        m = m.mul(1 / _factor);
+        m = m. mul(1 / _factor);
+        m.copyTo(*out);
         return 1 / _factor;
-    }else return 1;
+    }else{
+        m.copyTo(*out);
+        return 1;
+    }
 }
 
 double
-matNormalizeUnsign(Mat &m, double lower, double upper){
+matNormalizeUnsign(const Mat &mat, double lower, double upper){
+    //return 1.0;
+    Mat m;
+    mat.copyTo(m);
     double _factor = 0.0;
     double _max = max(m);
     double _min = min(m);
 
-    if(is_gradient_checking) return 1;
-    if(_max < upper && _min > lower) return 1;
+    if(is_gradient_checking) return 1.0;
+    if(_max <= upper && _min >= lower) return 1.0;
 
     if(fabs(_min) > fabs(_max)){
         _factor = _min / lower;
     }else{
         _factor = _max / upper;
     }
-    if(_factor != 0){
-        m = m.mul(1 / _factor);
-        return (1 / _factor);
-    }else return 1;
+    if(1.0 / _factor > 1e-6) return 1.0 / _factor;
+    else return 1.0;
 }
 
 // Follows are OpenCV maths
 Mat 
-exp(Mat src){
+exp(const Mat &src){
     Mat dst;
     exp(src, dst);
     return dst;
 }
 
 Mat 
-log(Mat src){
+log(const Mat &src){
     Mat dst;
     log(src, dst);
     return dst;
 }
 
 Mat 
-reduce(Mat src, int direc, int conf){
+reduce(const Mat &src, int direc, int conf){
     Mat dst;
     reduce(src, dst, direc, conf);
     return dst;
 }
 
 Mat 
-divide(Mat m1, Mat m2){
+divide(const Mat &m1, const Mat &m2){
     Mat dst;
     divide(m1, m2, dst);
     return dst;
 }
 
 Mat 
-pow(Mat m1, int val){
+pow(const Mat &m1, double val){
     Mat dst;
     pow(m1, val, dst);
     return dst;
 }
 
 double 
-sum1(Mat m){
+sum1(const Mat &m){
     double res = 0.0;
     Scalar tmp = sum(m);
     for(int i = 0; i < m.channels(); i++){
@@ -263,7 +274,7 @@ sum1(Mat m){
 }
 
 double
-max(Mat &m){
+max(const Mat &m){
     Point min;
     Point max;
     double minval;
@@ -273,7 +284,7 @@ max(Mat &m){
 }
 
 double
-min(Mat &m){
+min(const Mat &m){
     Point min;
     Point max;
     double minval;

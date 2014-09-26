@@ -176,8 +176,8 @@ get_layers_config(string &str){
                 double wd = get_word_double(layers[i], "WEIGHT_DECAY");
                 int pd = get_word_int(layers[i], "POOLING_DIM");
                 bool is3ch = get_word_bool(layers[i], "IS_3CH_KERNEL");
-                bool urn = get_word_bool(layers[i], "USE_URN");
-                convConfig.push_back(ConvLayerConfig(ks, ka, wd, pd, is3ch, urn));
+                bool lrn = get_word_bool(layers[i], "USE_LRN");
+                convConfig.push_back(ConvLayerConfig(ks, ka, wd, pd, is3ch, lrn));
                 break;
             }case 1:{
                 int hn = get_word_int(layers[i], "NUM_HIDDEN_NEURONS");

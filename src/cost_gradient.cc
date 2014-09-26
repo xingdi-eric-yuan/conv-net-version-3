@@ -10,6 +10,9 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     int nsamples = x.size();
     string path = "log/iter_" + to_string(log_iter) + "/";
     string tmp = "";
+    //$$LOG
+    //    save2txt3ch(x[0], path, "input_image.txt");
+    //$$_LOG
     // Conv & Pooling
     unordered_map<string, Mat> cpmap;
     unordered_map<string, vector<vector<Point> > > locmap;
@@ -17,11 +20,16 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     vector<Mat> P;
     vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
     for(int i = 0; i<vecstr.size(); i++){
+    //$$LOG
+    //    save2txt3ch(cpmap.at(vecstr[i]), path, "conv__" + to_string(i) + ".txt");
+    //$$_LOG
         P.push_back(cpmap.at(vecstr[i]));
     }
     Mat convolvedX = concatenateMat(P, nsamples);
     P.clear();
-
+    $$LOG
+        save2txt(convolvedX, path, "convolvedX.txt");
+    $$_LOG
     // full connected layers
     vector<Mat> nonlin;
     vector<Mat> hidden;
@@ -30,16 +38,19 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     hidden.push_back(convolvedX);
     acti.push_back(convolvedX);
     vector<Mat> bernoulli;
-    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
-    factor.push_back(_factor);
+    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
+    //hidden[0] = hidden[0].mul(_factor);
+    //factor.push_back(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
         $$LOG
             tmp = "activ_" + to_string(i) + ".txt";
             save2txt(tmpacti, path, tmp);
+            save2txt(hLayers[i - 1].W, path, "fc_" + to_string(i - 1) + "_W.txt");
         $$_LOG
-        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
-        factor.push_back(_factor);
+        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
+        //tmpacti = tmpacti.mul(_factor);
+        //factor.push_back(_factor);
         $$LOG
             tmp = "factorized_" + to_string(i) + ".txt";
             save2txt(tmpacti, path, tmp);
@@ -63,6 +74,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             tmp = "hidden_" + to_string(i) + ".txt";
             save2txt(hidden[i], path, tmp);
         }
+        save2txt(smr.W, path, "smr_W.txt");
     $$_LOG
     Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
     M -= repeat(reduce(M, 0, CV_REDUCE_MAX), M.rows, 1);
@@ -114,33 +126,42 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     delta[delta.size() - 1] = -smr.W.t() * (groundTruth - p);
 //    delta[delta.size() - 1] = delta[delta.size() -1].mul(dsigmoid_a(acti[acti.size() - 1]));
     delta[delta.size() - 1] = delta[delta.size() -1].mul(dReLU(nonlin[nonlin.size() -1]));
-    delta[delta.size() - 1] = delta[delta.size() -1].mul(factor[factor.size() - 1]);
+    //delta[delta.size() - 1] = delta[delta.size() -1].mul(factor[factor.size() - 1]);
     deltad2[deltad2.size() - 1] = pow(smr.W.t(), 2) * pow((groundTruth - p), 2.0);
     deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(dReLU(nonlin[nonlin.size() -1]), 2.0));
-    deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(factor[factor.size() - 1], 2.0));
+//    deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(dsigmoid_a(acti[acti.size() -1]), 2.0));
+    //deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(factor[factor.size() - 1], 2.0));
 
     if(fcConfig[fcConfig.size() - 1].DropoutRate < 1.0){
         delta[delta.size() - 1] = delta[delta.size() -1].mul(bernoulli[bernoulli.size() - 1]);
         deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(bernoulli[bernoulli.size() - 1], 2.0));
     } 
+
     for(int i = delta.size() - 2; i >= 0; i--){
         delta[i] = hLayers[i].W.t() * delta[i + 1];
         deltad2[i] = pow(hLayers[i].W.t(), 2.0) * deltad2[i + 1];
+            $$LOG
+                tmp = "delta_11111111.txt";
+                save2txt(delta[1], path, tmp);
+                tmp = "delta_00000000.txt";
+                save2txt(delta[0], path, tmp);
+            $$_LOG
         if(i > 0){
-//            delta[i] = delta[i].mul(dsigmoid_a(acti[i]));
+            //delta[i] = delta[i].mul(dsigmoid_a(acti[i]));
             delta[i] = delta[i].mul(dReLU(nonlin[i - 1]));
-            delta[i] = delta[i].mul(factor[i]);
+            //delta[i] = delta[i].mul(factor[i]);
+            //deltad2[i] = deltad2[i].mul(pow(dsigmoid_a(acti[i]), 2.0));
             deltad2[i] = deltad2[i].mul(pow(dReLU(nonlin[i - 1]), 2.0));
-            deltad2[i] = deltad2[i].mul(pow(factor[i], 2.0));
+            //deltad2[i] = deltad2[i].mul(pow(factor[i], 2.0));
             if(fcConfig[i - 1].DropoutRate < 1.0){
                 delta[i] = delta[i].mul(bernoulli[i - 1]);
                 deltad2[i] = deltad2[i].mul(pow(bernoulli[i - 1], 2.0));
             }
-        }
-        else{
-            delta[i] = delta[i].mul(factor[i]);
-            deltad2[i] = deltad2[i].mul(pow(factor[i], 2.0));
-        } 
+        }else{
+            //delta[i] = delta[i].mul(factor[i]);
+            //deltad2[i] = deltad2[i].mul(pow(factor[i], 2.0));
+        }     
+        //cout<<"factor = "<<factor[0]<<endl;         
     }
     $$LOG
         for(int i = 0; i < delta.size(); i++){   
@@ -168,8 +189,8 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     $$_LOG
 
     //bp - Conv layer
-    hashDelta(delta[0], cpmap, CLayers, HASH_DELTA);
-    hashDelta(deltad2[0], cpmap, CLayers, HASH_HESSIAN);
+    hashDelta(delta[0], cpmap, CLayers.size(), HASH_DELTA);
+    hashDelta(deltad2[0], cpmap, CLayers.size(), HASH_HESSIAN);
     for(int cl = CLayers.size() - 1; cl >= 0; cl --){
         int pDim = convConfig[cl].PoolingDim;
         vector<string> deltaKey = getLayerKey(nsamples, cl, KEY_DELTA);
@@ -215,7 +236,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                 for(int i = 0; i < prevUD.size(); i++){
                     string strd = getPreviousLayerKey(prevUD[i], KEY_DELTA);
                     string strh = getPreviousLayerKey(prevUH[i], KEY_HESSIAN);
-                    //unordered_map<string, Mat>::iterator got = cpmap.find(strd);
                     if(cpmap.find(strd) == cpmap.end()){
                         string psize = getPreviousLayerKey(prevUD[i], KEY_POOL);
                         Mat zero1 = Mat::zeros(cpmap.at(psize).rows, cpmap.at(psize).cols, CV_64FC3);
@@ -257,10 +277,10 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                 tpbd2 +=sum(temp);
             }
             if(convConfig[cl].is3chKernel){
-                CLayers[cl].layer[j].Wgrad = tpgradW / nsamples + convConfig[cl].WeightDecay * CLayers[cl].layer[j].W;
-                CLayers[cl].layer[j].bgrad = tpgradb.mul(1 / nsamples);
-                CLayers[cl].layer[j].Wd2 = tpWd2 / nsamples + convConfig[cl].WeightDecay;
-                CLayers[cl].layer[j].bd2 = tpbd2.mul(1 / nsamples);
+                CLayers[cl].layer[j].Wgrad = tpgradW / convKey.size() + convConfig[cl].WeightDecay * CLayers[cl].layer[j].W;
+                CLayers[cl].layer[j].bgrad = tpgradb.mul(1 / convKey.size());
+                CLayers[cl].layer[j].Wd2 = tpWd2 / convKey.size() + Scalar::all(convConfig[cl].WeightDecay);
+                CLayers[cl].layer[j].bd2 = tpbd2.mul(1 / convKey.size());
             }else{
                 vector<Mat> _tpgradWs;
                 vector<Mat> _tpWd2s;
@@ -276,10 +296,10 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
                     _bufferb += tpgradb[ch];
                     _bufferbd2 += tpbd2[ch];
                 }
-                _bufferW = _bufferW / nsamples + convConfig[cl].WeightDecay * _tpgradWs.size() * CLayers[cl].layer[j].W;
-                _bufferWd2 = _bufferWd2 / nsamples + convConfig[cl].WeightDecay * _tpWd2s.size();
-                _bufferb = _bufferb / nsamples;
-                _bufferbd2 = _bufferbd2 / nsamples;
+                _bufferW = _bufferW / convKey.size() + convConfig[cl].WeightDecay * _tpgradWs.size() * CLayers[cl].layer[j].W;
+                _bufferWd2 = _bufferWd2 / convKey.size() + convConfig[cl].WeightDecay * _tpWd2s.size();
+                _bufferb = _bufferb / convKey.size();
+                _bufferbd2 = _bufferbd2 / convKey.size();
                 CLayers[cl].layer[j].Wgrad = _bufferW;
                 CLayers[cl].layer[j].Wd2 = _bufferWd2;
                 CLayers[cl].layer[j].bgrad = Scalar(_bufferb);
@@ -292,6 +312,12 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             tpgradW.release();
         }
     }
+
+//    int aaaaa = 0;
+//    for(unordered_map<string, Mat>::const_iterator it = cpmap.begin(); it != cpmap.end(); it++){
+//        cout<<it -> first<<endl;
+//        ++ aaaaa;
+//    }
 
     $$LOG 
         tmp = path + "gradient/";
@@ -318,7 +344,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
 
 void
 getNetworkLearningRate(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr){
-/*
+
     int nsamples = x.size();
     // Conv & Pooling
     unordered_map<string, Mat> cpmap;
@@ -335,12 +361,13 @@ getNetworkLearningRate(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl>
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
-    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
+    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
+    //hidden[0] = hidden[0].mul(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
+        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
+        //tmpacti = tmpacti.mul(_factor);
         tmpacti = ReLU(tmpacti);
-//      tmpacti = sigmoid(tmpacti);
         hidden.push_back(tmpacti);
     }
 
@@ -355,7 +382,7 @@ getNetworkLearningRate(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl>
     // destructor
     cpmap.clear();
     locmap.clear();
-    */
+    
 }
 
 

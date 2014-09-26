@@ -28,23 +28,23 @@ Scalar Vec3d2Scalar(Vec3d a){
 
 
 void
-unconcatenateMat(vector<Mat> &src, vector<vector<Mat> > &dst, int vsize){
+unconcatenateMat(const vector<Mat> &src, vector<vector<Mat> > *dst, int vsize){
     for(int i = 0; i < src.size() / vsize; i++){
         vector<Mat> tmp;
         for(int j = 0; j < vsize; j++){
-            Mat img = src[i * vsize + j];
+            Mat img(src[i * vsize + j]);
             vector<Mat> imgs;
             split(img, imgs);
             for(int ch = 0; ch < imgs.size(); ch++){
                 tmp.push_back(imgs[ch]);
             }
         }
-        dst.push_back(tmp);
+        dst -> push_back(tmp);
     }
 }
 
 Mat 
-concatenateMat(vector<vector<Mat> > &vec){
+concatenateMat(const vector<vector<Mat> > &vec){
     int subFeatures = vec[0][0].rows * vec[0][0].cols;
     int height = vec[0].size() * subFeatures;
     int width = vec.size();
@@ -61,14 +61,14 @@ concatenateMat(vector<vector<Mat> > &vec){
 }
 
 Mat 
-concatenateMat(vector<Mat> &vec, int matcols){
+concatenateMat(const vector<Mat> &vec, int matcols){
     vector<vector<Mat> > temp;
-    unconcatenateMat(vec, temp, vec.size() / matcols);
+    unconcatenateMat(vec, &temp, vec.size() / matcols);
     return concatenateMat(temp);
 }
 
 double 
-getLearningRate(Mat &data){
+getLearningRate(const Mat &data){
     // see Yann LeCun's Efficient BackProp, 5.1 A Little Theory
     int nfeatures = data.rows;
     int nsamples = data.cols;

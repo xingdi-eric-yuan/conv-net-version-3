@@ -4,12 +4,12 @@ using namespace cv;
 using namespace std;
 
 void
-trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLayers, Smr &smr){
+trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLayers, Smr &smr, const vector<Mat> &tx, const Mat &ty){
 
     if (is_gradient_checking){
         vector<Mat> tpx;
         Mat tpy;
-        getSample(x, tpx, y, tpy, 1, SAMPLE_COLS);
+        getSample(x, &tpx, y, &tpy, 1, SAMPLE_COLS);
         gradientChecking_ConvLayer(CLayers, HiddenLayers, smr, tpx, tpy);
         gradientChecking_FullConnectLayer(CLayers, HiddenLayers, smr, tpx, tpy);
         gradientChecking_SoftmaxLayer(CLayers, HiddenLayers, smr, tpx, tpy);
@@ -79,63 +79,69 @@ trainNetwork(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLa
         double Momentum_w = 0.5;
         double Momentum_b = 0.5;
         double Momentum_d2 = 0.5;
-        double lr_w_global = lrate_w;
-        double lr_b_global = lrate_b;
         Mat lr_w;
         Mat lr_b;
         Scalar lr_b_s;
         //double lr_b = lr_b_global;
-        double mu = 0.3;
-        Scalar mu_s = Scalar(mu, mu, mu);
-        for(int k = 0; k <= iter_per_epo; k++){
-            log_iter = k;
-            string path = "log/iter_" + to_string(log_iter);
-            $$LOG mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); $$_LOG
+        double mu = 1e-2;
+        int k = 0;
+        for(int epo = 0; epo < training_epochs; epo++){
+            for(; k <= iter_per_epo; k++){
+                log_iter = k;
+                string path = "log/iter_" + to_string(log_iter);
+                $$LOG mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); $$_LOG
 
-            if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.9;}
-            vector<Mat> batchX;
-            Mat batchY; 
-            getSample(x, batchX, y, batchY, batch_size, SAMPLE_COLS);
-            //if(k == 20) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
-            cout<<"iter: "<<k<<", learning step: "<<k;//<<endl;           
-            getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
-            // softmax update
-            smrWd2 = Momentum_d2 * smrWd2 + (1.0 - Momentum_d2) * smr.Wd2;
-            smrbd2 = Momentum_d2 * smrbd2 + (1.0 - Momentum_d2) * smr.bd2;
-            lr_w = lr_w_global / (smrWd2 + mu);
-            lr_b = lr_b_global / (smrbd2 + mu);
-            v_smr_W = v_smr_W * Momentum_w + smr.Wgrad.mul(lr_w);
-            v_smr_b = v_smr_b * Momentum_b + smr.bgrad.mul(lr_b);
-            smr.W -= v_smr_W;
-            smr.b -= v_smr_b;
-            // full-connected layer update
-            for(int i = 0; i < HiddenLayers.size(); i++){
-                hlWd2[i] = Momentum_d2 * hlWd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].Wd2;
-                hlbd2[i] = Momentum_d2 * hlbd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].bd2;
-                lr_w = lr_w_global / (hlWd2[i] + mu);
-                lr_b = lr_b_global / (hlbd2[i] + mu);
-                v_hl_W[i] = v_hl_W[i] * Momentum_w + HiddenLayers[i].Wgrad.mul(lr_w);
-                v_hl_b[i] = v_hl_b[i] * Momentum_b + HiddenLayers[i].bgrad.mul(lr_b);
-                HiddenLayers[i].W -= v_hl_W[i];
-                HiddenLayers[i].b -= v_hl_b[i];
-            }
-            // convolutional layer update
-            for(int cl = 0; cl < CLayers.size(); cl++){
-                for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-                    cvlWd2[cl][i] = Momentum_d2 * cvlWd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].Wd2;
-                    cvlbd2[cl][i] = Momentum_d2 * cvlbd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].bd2;
-                    lr_w = lr_w_global / (cvlWd2[cl][i] + mu);
-                    lr_b_s = lr_b_global / (cvlbd2[cl][i] + mu_s);
-                    v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum_w + CLayers[cl].layer[i].Wgrad.mul(lr_w);                        
-                    v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum_b + CLayers[cl].layer[i].bgrad.mul(lr_b_s);
-                    CLayers[cl].layer[i].W -= v_cvl_W[cl][i];
-                    CLayers[cl].layer[i].b -= v_cvl_b[cl][i];
+                if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.95;}
+                vector<Mat> batchX;
+                Mat batchY; 
+                getSample(x, &batchX, y, &batchY, batch_size, SAMPLE_COLS);
+                //if(k == 20) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
+                cout<<"epoch: "<<epo<<", iter: "<<k<<", learning step: "<<k;//<<endl;           
+                getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
+                // softmax update
+                smrWd2 = Momentum_d2 * smrWd2 + (1.0 - Momentum_d2) * smr.Wd2;
+                smrbd2 = Momentum_d2 * smrbd2 + (1.0 - Momentum_d2) * smr.bd2;
+                lr_w = smr.lr_w / (smrWd2 + mu);
+                lr_b = smr.lr_b / (smrbd2 + mu);
+                v_smr_W = v_smr_W * Momentum_w + (1.0 - Momentum_w) * smr.Wgrad.mul(lr_w);
+                v_smr_b = v_smr_b * Momentum_b + (1.0 - Momentum_b) * smr.bgrad.mul(lr_b);
+                smr.W -= v_smr_W;
+                smr.b -= v_smr_b;
+                // full-connected layer update
+                for(int i = 0; i < HiddenLayers.size(); i++){
+                    hlWd2[i] = Momentum_d2 * hlWd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].Wd2;
+                    hlbd2[i] = Momentum_d2 * hlbd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].bd2;
+                    lr_w = HiddenLayers[i].lr_w / (hlWd2[i] + mu);
+                    lr_b = HiddenLayers[i].lr_b / (hlbd2[i] + mu);
+                    v_hl_W[i] = v_hl_W[i] * Momentum_w + (1.0 - Momentum_w) * HiddenLayers[i].Wgrad.mul(lr_w);
+                    v_hl_b[i] = v_hl_b[i] * Momentum_b + (1.0 - Momentum_b) * HiddenLayers[i].bgrad.mul(lr_b);
+                    HiddenLayers[i].W -= v_hl_W[i];
+                    HiddenLayers[i].b -= v_hl_b[i];
                 }
+                // convolutional layer update
+                for(int cl = 0; cl < CLayers.size(); cl++){
+                    for(int i = 0; i < convConfig[cl].KernelAmount; i++){
+                        cvlWd2[cl][i] = Momentum_d2 * cvlWd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].Wd2;
+                        cvlbd2[cl][i] = Momentum_d2 * cvlbd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].bd2;
+                        lr_w = CLayers[cl].layer[i].lr_w / (cvlWd2[cl][i] + mu);
+                        if(convConfig[cl].is3chKernel) lr_b_s = CLayers[cl].layer[i].lr_b / (cvlbd2[cl][i] + Scalar(mu, mu, mu));
+                        else lr_b_s = CLayers[cl].layer[i].lr_b / (cvlbd2[cl][i] + Scalar(mu));
+                        v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum_w + (1.0 - Momentum_w) * CLayers[cl].layer[i].Wgrad.mul(lr_w);                        
+                        v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum_b + (1.0 - Momentum_b) * CLayers[cl].layer[i].bgrad.mul(lr_b_s);
+                        CLayers[cl].layer[i].W -= v_cvl_W[cl][i];
+                        CLayers[cl].layer[i].b -= v_cvl_b[cl][i];
+                    }
+                }
+                batchX.clear();
+                batchY.release();
+                $$LOG saveConvKernel(CLayers, path); $$_LOG
+            }   
+            if(! is_gradient_checking){
+                testNetwork(x, y, CLayers, HiddenLayers, smr);
+                testNetwork(tx, ty, CLayers, HiddenLayers, smr);
             }
-            batchX.clear();
-            batchY.release();
-            $$LOG saveConvKernel(CLayers, path); $$_LOG
-        }   
+        }
+
         v_smr_W.release();
         v_smr_b.release();
         v_hl_W.clear();

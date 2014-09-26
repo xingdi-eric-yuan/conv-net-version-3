@@ -6,7 +6,7 @@ using namespace std;
 void
 weightRandomInit(ConvK &convk, int width, bool is3chKernel){
     if(is3chKernel){
-        convk.W = Mat::ones(width, width, CV_64FC3);
+        convk.W = cv::Mat(width, width, CV_64FC3, Scalar(1.0, 1.0, 1.0));
         randu(convk.W, Scalar(-1.0, -1.0, -1.0), Scalar(1.0, 1.0, 1.0));
         convk.b = Scalar(0.0, 0.0, 0.0);
         convk.Wgrad = Mat::zeros(width, width, CV_64FC3);
@@ -22,8 +22,10 @@ weightRandomInit(ConvK &convk, int width, bool is3chKernel){
         convk.Wd2 = Mat::zeros(convk.W.size(), CV_64FC1);
         convk.bd2 = Scalar(0.0);
     }
-    double epsilon = 0.12;
+    double epsilon = 0.05;
     convk.W = convk.W * epsilon;
+    convk.lr_w = lrate_w;
+    convk.lr_b = lrate_b;
 }
 
 void
@@ -37,6 +39,8 @@ weightRandomInit(Fcl &ntw, int inputsize, int hiddensize){
     ntw.bgrad = Mat::zeros(hiddensize, 1, CV_64FC1);
     ntw.Wd2 = Mat::zeros(ntw.W.size(), CV_64FC1);
     ntw.bd2 = Mat::zeros(ntw.b.size(), CV_64FC1);
+    ntw.lr_w = lrate_w;
+    ntw.lr_b = lrate_b;
 }
 
 void 
@@ -51,6 +55,8 @@ weightRandomInit(Smr &smr, int nclasses, int nfeatures){
     smr.bgrad = Mat::zeros(nclasses, 1, CV_64FC1);
     smr.Wd2 = Mat::zeros(smr.W.size(), CV_64FC1);
     smr.bd2 = Mat::zeros(smr.b.size(), CV_64FC1);
+    smr.lr_w = lrate_w;
+    smr.lr_b = lrate_b;
 }
 
 void

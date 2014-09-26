@@ -80,13 +80,14 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
 void
 preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
     for(int i = 0; i < trainX.size(); i++){
-        cvtColor(trainX[i], trainX[i], CV_RGB2YCrCb);
+        //cvtColor(trainX[i], trainX[i], CV_RGB2YCrCb);
         trainX[i].convertTo(trainX[i], CV_64FC3, 1.0/255, 0);
     }
     for(int i = 0; i < testX.size(); i++){
-        cvtColor(testX[i], testX[i], CV_RGB2YCrCb);
+        //cvtColor(testX[i], testX[i], CV_RGB2YCrCb);
         testX[i].convertTo(testX[i], CV_64FC3, 1.0/255, 0);
     }
+    /*
     // get average
     Mat average = trainX[0] / (trainX.size() + testX.size());
     for(int i = 1; i < trainX.size(); i++)
@@ -98,6 +99,7 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
         trainX[i] -= average;
     for(int i = 0; i < testX.size(); i++)
         testX[i] -= average;
+        */
     // equal stddev
     Scalar mean;
     Scalar stddev;

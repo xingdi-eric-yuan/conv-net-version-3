@@ -23,11 +23,12 @@ resultPredict(const Mat &_x, const vector<Cvl> &CLayers, const vector<Fcl> &hLay
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
-
-    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
+    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
+    //hidden[0] = hidden[0].mul(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
+        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
+        //tmpacti = tmpacti.mul(_factor);
 //        tmpacti = sigmoid(tmpacti);
         tmpacti = ReLU(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0) tmpacti = tmpacti.mul(fcConfig[i - 1].DropoutRate);
@@ -66,11 +67,12 @@ resultPredict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
-
-    double _factor = matNormalizeUnsign(hidden[0], - 5.0, 5.0);
+    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
+    //hidden[0] = hidden[0].mul(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        _factor = matNormalizeUnsign(tmpacti, -5.0, 5.0);
+        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
+        //tmpacti = tmpacti.mul(_factor);
 //        tmpacti = sigmoid(tmpacti);
         tmpacti = ReLU(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0) tmpacti = tmpacti.mul(fcConfig[i - 1].DropoutRate);

@@ -37,10 +37,10 @@ run(){
     if(use_log){
         mkdir("log", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     }
-    trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr);
-    if(! is_gradient_checking){
-        testNetwork(testX, testY, ConvLayers, HiddenLayers, smr);
-    }
+    trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr, testX, testY);
+//    if(! is_gradient_checking){
+//        testNetwork(testX, testY, ConvLayers, HiddenLayers, smr);
+//    }
     ConvLayers.clear();
     HiddenLayers.clear();
 }
@@ -57,6 +57,36 @@ main(int argc, char** argv){
     start = clock();
 
     run();
+/*
+
+    Mat a = cv::Mat(3, 3, CV_64FC3, Scalar(1.0, 1.0, 1.0));
+    a = a.mul(3.0);
+    a.AT3D(1, 1) *= 2.0;
+
+    cout<<a<<endl;
+
+    //Mat b = cv::Mat(2, 2, CV_64FC3, Scalar(1.0, 1.0, 1.0));
+    //b.AT3D(0, 1) *= 2.0;
+    //b.AT3D(1, 0) *= 3.0;
+    //b.AT3D(1, 1) *= 4.0;
+    //cout <<b<<endl;
+    Mat b = Mat::ones(2, 2, CV_64FC1);
+    b.ATD(0, 1) *= 2.0;
+    b.ATD(1, 0) *= 3.0;
+    b.ATD(1, 1) *= 4.0;
+    cout <<b<<endl;
+
+
+
+    Mat c = convCalc(a, b, CONV_VALID);
+    cout<<c<<endl;
+*/
+
+
+
+
+
+
 
     end = clock();
     cout<<"Totally used time: "<<((double)(end - start)) / CLOCKS_PER_SEC<<" second"<<endl;

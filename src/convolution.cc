@@ -2,7 +2,7 @@
 
 
 Point
-findLoc(Mat &prob, int m){
+findLoc(const Mat &prob, int m){
     Mat temp, idx;
     Point res = Point(0, 0);
     prob.reshape(0, 1).copyTo(temp); 
@@ -16,7 +16,7 @@ findLoc(Mat &prob, int m){
 }
 
 vector<Point>
-findLocCh3(Mat &prob, int m){
+findLocCh3(const Mat &prob, int m){
     vector<Mat> probs;
     split(prob , probs);
     vector<Point> res;
@@ -27,7 +27,7 @@ findLocCh3(Mat &prob, int m){
 }
 
 void
-minMaxLoc(Mat &img, Scalar &minVal, Scalar &maxVal, vector<Point> &minLoc, vector<Point> &maxLoc){
+minMaxLoc(const Mat &img, Scalar &minVal, Scalar &maxVal, vector<Point> &minLoc, vector<Point> &maxLoc){
     vector<Mat> imgs;
     split(img, imgs);
     for(int i = 0; i < imgs.size(); i++){
@@ -45,6 +45,15 @@ minMaxLoc(Mat &img, Scalar &minVal, Scalar &maxVal, vector<Point> &minLoc, vecto
 
 Mat
 Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat, bool isTest){
+    if(pVert == 1 && pHori == 1){
+        vector<Point> tppt;
+        for(int ch = 0; ch < 3; ch++){
+            tppt.push_back(Point(0, 0));
+        }
+        locat.push_back(tppt);
+        Mat res(M);
+        return res;
+    }
     int remX = M.cols % pHori;
     int remY = M.rows % pVert;
     Mat newM;
@@ -106,9 +115,13 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
 
 Mat 
 UnPooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat){
+    if(pVert == 1 && pHori == 1){
+        Mat res(M);
+        return res;
+    }
     Mat res;
     if(POOL_MEAN == poolingMethod){
-        Mat one = Mat::ones(pVert, pHori, CV_64FC3);
+        Mat one = cv::Mat(pVert, pHori, CV_64FC3, Scalar(1.0, 1.0, 1.0));
         res = kron(M, one) / (pVert * pHori);
         one.release();
     }elif(POOL_MAX == poolingMethod || POOL_STOCHASTIC == poolingMethod){
@@ -140,22 +153,19 @@ localResponseNorm(const unordered_map<string, Mat> &map, string str){
         from = 0;
         to = convConfig[current_layer_num].KernelAmount - 1;
     }else{
-        from = (current_kernel_num - lrn_size / 2) > 0 ? (current_kernel_num - lrn_size / 2) : 0;
-        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? 
+        from = (current_kernel_num - lrn_size / 2) >= 0 ? (current_kernel_num - lrn_size / 2) : 0;
+        to = (current_kernel_num + lrn_size / 2) <= (convConfig[current_layer_num].KernelAmount - 1) ? 
              (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
     }
     for(int j = from; j <= to; j++){
         string tmpstr = current_layer + "K" + i2str(j);
         Mat tmpmat;
         map.at(tmpstr).copyTo(tmpmat);
-        pow(tmpmat, 2.0, tmpmat);
-        sum += tmpmat;
+        sum += pow(tmpmat, 2.0);
         tmpmat.release();
     }
-    sum = sum * lrn_scale / convConfig[current_layer_num].KernelAmount;
-    sum += Scalar(1.0, 1.0, 1.0);
-    pow(sum, lrn_beta, sum);
-    divide(res, sum, res);
+    sum = sum * lrn_scale / (to - from + 1) + Scalar::all(1.0);
+    divide(res, pow(sum, lrn_beta), res);
     sum.release();
     return res;
 }
@@ -176,33 +186,26 @@ dlocalResponseNorm(const unordered_map<string, Mat> &map, string str){
         from = 0;
         to = convConfig[current_layer_num].KernelAmount - 1;
     }else{
-        from = (current_kernel_num - lrn_size / 2) > 0 ? (current_kernel_num - lrn_size / 2) : 0;
-        to = (current_kernel_num + lrn_size / 2) < (convConfig[current_layer_num].KernelAmount - 1) ? 
+        from = (current_kernel_num - lrn_size / 2) >= 0 ? (current_kernel_num - lrn_size / 2) : 0;
+        to = (current_kernel_num + lrn_size / 2) <= (convConfig[current_layer_num].KernelAmount - 1) ? 
              (current_kernel_num + lrn_size / 2) : (convConfig[current_layer_num].KernelAmount - 1);
     }
     for(int j = from; j <= to; j++){
         string tmpstr = current_layer + "K" + i2str(j);
         Mat tmpmat;
         map.at(tmpstr).copyTo(tmpmat);
-        pow(tmpmat, 2, tmpmat);
-        sum += tmpmat;
+        sum += pow(tmpmat, 2.0);
         tmpmat.release();
     }
-    sum = sum * lrn_scale / convConfig[current_layer_num].KernelAmount;
-    sum += Scalar(1.0, 1.0, 1.0);
+    sum = sum * lrn_scale / (to - from + 1) + Scalar::all(1.0);
 
-    pow(sum, lrn_beta, tmp);
-    res = da.mul(tmp);
-
-    pow(sum, lrn_beta - 1, tmp);
-    tmp = tmp.mul(a);
-    tmp = tmp.mul(a);
-    tmp = tmp.mul(da);
-    tmp *= lrn_scale / convConfig[current_layer_num].KernelAmount * 2.0;
+    res = da.mul(pow(sum, lrn_beta));
+    tmp = a.mul(a).mul(da);
+    tmp = tmp.mul(pow(sum, lrn_beta - 1)) * lrn_scale / (to - from + 1) * 2.0;
     res -= tmp;
 
     pow(sum, lrn_beta * 2, tmp);
-    divide(res, tmp, res);
+    res = divide(res, pow(sum, lrn_beta * 2));
     a.release();
     da.release();
     sum.release();
@@ -290,17 +293,17 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
 }
 
 void
-hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers, int type){
+hashDelta(const Mat &src, unordered_map<string, Mat> &map, int layersize, int type){
     int nsamples = src.cols;
     for(int m = 0; m < nsamples; m ++){
         string s1 = "X" + i2str(m);
         vector<string> vecstr;
-        for(int i = 0; i < CLayers.size(); i ++){
+        for(int i = 0; i < layersize; i ++){
             if(i == 0){
                 string s2 = s1 + "C0";
                 for(int k = 0; k < convConfig[i].KernelAmount; k ++){
                     string s3 = s2 + "K" + i2str(k) + "P";
-                    if(i == CLayers.size() - 1){
+                    if(i == layersize - 1){
                         if(type == HASH_DELTA) s3 += "D";
                         elif(type == HASH_HESSIAN) s3 += "H";
                     }
@@ -312,7 +315,7 @@ hashDelta(const Mat &src, unordered_map<string, Mat> &map, vector<Cvl> &CLayers,
                     string s2 = vecstr[j] + "C" + i2str(i);
                     for(int k = 0; k < convConfig[i].KernelAmount; k ++){
                         string s3 = s2 + "K" + i2str(k) + "P";
-                        if(i == CLayers.size() - 1){
+                        if(i == layersize - 1){
                             if(type == HASH_DELTA) s3 += "D";
                             elif(type == HASH_HESSIAN) s3 += "H";
                         }

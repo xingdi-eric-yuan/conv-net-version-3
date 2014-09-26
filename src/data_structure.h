@@ -13,6 +13,8 @@ typedef struct ConvKernel{
     Scalar bgrad;
     Mat Wd2;
     Scalar bd2;
+    double lr_b;
+    double lr_w;
 }ConvK;
 
 typedef struct ConvLayer{
@@ -26,6 +28,8 @@ typedef struct FullConnectLayer{
     Mat bgrad;
     Mat Wd2;
     Mat bd2;
+    double lr_b;
+    double lr_w;
 }Fcl;
 
 typedef struct SoftmaxRegession{
@@ -36,6 +40,8 @@ typedef struct SoftmaxRegession{
     double cost;
     Mat Wd2;
     Mat bd2;
+    double lr_b;
+    double lr_w;
 }Smr;
 
 ///////////////////////////////////
