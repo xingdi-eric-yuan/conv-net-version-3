@@ -51,7 +51,8 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
             tppt.push_back(Point(0, 0));
         }
         locat.push_back(tppt);
-        Mat res(M);
+        Mat res;
+        M.copyTo(res);
         return res;
     }
     int remX = M.cols % pHori;
@@ -116,7 +117,8 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
 Mat 
 UnPooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat){
     if(pVert == 1 && pHori == 1){
-        Mat res(M);
+        Mat res;
+        M.copyTo(res);
         return res;
     }
     Mat res;

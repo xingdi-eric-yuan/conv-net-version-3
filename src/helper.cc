@@ -32,7 +32,8 @@ unconcatenateMat(const vector<Mat> &src, vector<vector<Mat> > *dst, int vsize){
     for(int i = 0; i < src.size() / vsize; i++){
         vector<Mat> tmp;
         for(int j = 0; j < vsize; j++){
-            Mat img(src[i * vsize + j]);
+            Mat img;
+            src[i * vsize + j].copyTo(img);
             vector<Mat> imgs;
             split(img, imgs);
             for(int ch = 0; ch < imgs.size(); ch++){

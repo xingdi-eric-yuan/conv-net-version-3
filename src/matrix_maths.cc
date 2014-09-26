@@ -56,7 +56,8 @@ dReLU(const Mat& M){
 
 Mat 
 Tanh(const Mat &M){
-    Mat res(M);
+    Mat res;
+    M.copyTo(res);
     for(int i=0; i<res.rows; i++){
         for(int j=0; j<res.cols; j++){
             res.ATD(i, j) = tanh(M.ATD(i, j));
@@ -181,7 +182,8 @@ getBernoulliMatrix(int height, int width, double prob){
 
 double
 matNormalize(const Mat &mat, Mat *out, double lower, double upper){
-    Mat m(mat);
+    Mat m;
+    mat.copyTo(m);
     double _factor = 0.0;
     double mid = lower + (upper - lower) / 2.0;
     double _max = max(m);

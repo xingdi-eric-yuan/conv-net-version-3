@@ -10,7 +10,8 @@ gradientChecking_ConvLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr,
     getNetworkCost(x, y, CLayers, hLayers, smr);
     int a = 0;
     int b = 0;
-    Mat grad(CLayers[a].layer[b].Wgrad);
+    Mat grad;
+    CLayers[a].layer[b].Wgrad.copyTo(grad);
     cout<<"################################################"<<endl;
     cout<<"## test convolutional layer !!!!"<<endl;
     cout<<"################################################"<<endl;
@@ -57,7 +58,8 @@ gradientChecking_FullConnectLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Sm
     //cost function and dJ function are correct)
     getNetworkCost(x, y, CLayers, hLayers, smr);
     int a = 0;
-    Mat grad(hLayers[a].Wgrad);
+    Mat grad;
+    hLayers[a].Wgrad.copyTo(grad);
     cout<<"################################################"<<endl;
     cout<<"## test full-connected layer !!!!"<<endl;
     cout<<"################################################"<<endl;
@@ -84,7 +86,8 @@ gradientChecking_SoftmaxLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &s
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
     getNetworkCost(x, y, CLayers, hLayers, smr);
-    Mat grad(smr.Wgrad);
+    Mat grad;
+    smr.Wgrad.copyTo(grad);
     cout<<"################################################"<<endl;
     cout<<"## test softmax layer !!!!"<<endl;
     cout<<"################################################"<<endl;

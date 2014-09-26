@@ -107,7 +107,7 @@ testNetwork(const vector<Mat> &testX, const Mat &testY, const vector<Cvl> &CLaye
     vector<Mat> tmpBatch;
     int batch_amount = testX.size() / batchSize;
     for(int i = 0; i < batch_amount; i++){
-        cout<<"processing batch No. "<<i<<endl;
+        //cout<<"processing batch No. "<<i<<endl;
         for(int j = 0; j < batchSize; j++){
             tmpBatch.push_back(testX[i * batchSize + j]);
         }
@@ -117,7 +117,7 @@ testNetwork(const vector<Mat> &testX, const Mat &testY, const vector<Cvl> &CLaye
         tmpBatch.clear();
     }
     if(testX.size() % batchSize){
-        cout<<"processing batch No. "<<batch_amount<<endl;
+        //cout<<"processing batch No. "<<batch_amount<<endl;
         for(int j = 0; j < testX.size() % batchSize; j++){
             tmpBatch.push_back(testX[batch_amount * batchSize + j]);
         }
@@ -128,7 +128,8 @@ testNetwork(const vector<Mat> &testX, const Mat &testY, const vector<Cvl> &CLaye
         tmpBatch.clear();
     }
 
-    Mat err(testY);
+    Mat err;
+    testY.copyTo(err);
     err -= result;
     int correct = err.cols;
     for(int i=0; i<err.cols; i++){
