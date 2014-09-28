@@ -90,7 +90,7 @@ trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fc
                 log_iter = k;
                 string path = "log/iter_" + to_string(log_iter);
                 $$LOG mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); $$_LOG
-                if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.95;}
+                if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.90;}
                 vector<Mat> batchX;
                 Mat batchY; 
                 getSample(x, &batchX, y, &batchY, batch_size, SAMPLE_COLS);
