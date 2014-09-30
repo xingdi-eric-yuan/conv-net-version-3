@@ -51,7 +51,7 @@
 #define ATD at<double>
 #define AT3D at<cv::Vec3d>
 #define elif else if
-#define $$LOG if(use_log && log_iter % 100 == 0){
+#define $$LOG if(use_log && log_iter % 1000 == 0){
 #define $$_LOG }
 
 using namespace std;
