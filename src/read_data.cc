@@ -100,16 +100,24 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
     for(int i = 0; i < testX.size(); i++)
         testX[i] -= average;
         */
-    // equal stddev
+    // first convert vec of mat into a single mat
+    Mat tmp = concatenateMat(trainX, trainX.size());
+    Mat tmp2 = concatenateMat(testX, testX.size());
+    Mat alldata = Mat::zeros(tmp.rows, tmp.cols + tmp2.cols, CV_64FC3);
     Scalar mean;
     Scalar stddev;
     for(int i = 0; i < trainX.size(); i++){
-        meanStdDev (trainX[i], mean, stddev);
         divide(trainX[i] - mean, stddev, trainX[i]);
     }
     for(int i = 0; i < testX.size(); i++){
-        meanStdDev (testX[i], mean, stddev);
         divide(testX[i] - mean, stddev, testX[i]);
     }
+    tmp.release();
+    tmp2.release();
+    alldata.release();
 }
+
+
+
+
 
