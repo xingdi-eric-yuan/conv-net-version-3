@@ -77,6 +77,23 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
     cout<<"There are "<<trainY.cols<<" training labels and "<<testY.cols<<" testing labels."<<endl<<endl;
 }
 
+Mat 
+concat(const vector<Mat> &vec){
+    
+    int height = vec[0].rows * vec[0].cols;
+    int width = vec.size();
+    Mat res = Mat::zeros(height, width, CV_64FC3);
+    for(int i = 0; i < vec.size(); i++){
+        Rect roi = Rect(i, 0, 1, height);
+        Mat subView = res(roi);
+        Mat ptmat = vec[i].reshape(0, height);
+        ptmat.copyTo(subView);
+    }
+    return res;
+}
+
+
+
 void
 preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
     for(int i = 0; i < trainX.size(); i++){
@@ -101,11 +118,17 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
         testX[i] -= average;
         */
     // first convert vec of mat into a single mat
-    Mat tmp = concatenateMat(trainX, trainX.size());
-    Mat tmp2 = concatenateMat(testX, testX.size());
+    Mat tmp = concat(trainX);
+    Mat tmp2 = concat(testX);
     Mat alldata = Mat::zeros(tmp.rows, tmp.cols + tmp2.cols, CV_64FC3);
+    
+    tmp.copyTo(alldata(Rect(0, 0, tmp.cols, tmp.rows)));
+    tmp2.copyTo(alldata(Rect(tmp.cols, 0, tmp2.cols, tmp.rows)));
+
     Scalar mean;
     Scalar stddev;
+    meanStdDev (alldata, mean, stddev);
+
     for(int i = 0; i < trainX.size(); i++){
         divide(trainX[i] - mean, stddev, trainX[i]);
     }
