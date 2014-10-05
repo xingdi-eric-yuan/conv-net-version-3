@@ -85,7 +85,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     for(int i = 0; i < nsamples; i++){
         groundTruth.ATD(y.ATD(0, i), i) = 1.0;
     }
-
     double J1 = - sum1(groundTruth.mul(log(p))) / nsamples;
     double J2 = sum1(pow(smr.W, 2.0)) * softmaxConfig.WeightDecay / 2;
     double J3 = 0.0; 
@@ -113,7 +112,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     smr.Wd2 = pow((groundTruth - p), 2.0) * pow(hidden[hidden.size() - 1].t(), 2.0);
     smr.Wd2 = smr.Wd2 / nsamples + softmaxConfig.WeightDecay;
     smr.bd2 = reduce(pow((groundTruth - p), 2.0), 1, CV_REDUCE_SUM) / nsamples;
-
     $$LOG
         tmp = path + "gradient";
         mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -125,18 +123,18 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     vector<Mat> deltad2(hidden.size());
     delta[delta.size() - 1] = -smr.W.t() * (groundTruth - p);
 //    delta[delta.size() - 1] = delta[delta.size() -1].mul(dsigmoid_a(acti[acti.size() - 1]));
-    delta[delta.size() - 1] = delta[delta.size() -1].mul(dReLU(nonlin[nonlin.size() -1]));
     //delta[delta.size() - 1] = delta[delta.size() -1].mul(factor[factor.size() - 1]);
     deltad2[deltad2.size() - 1] = pow(smr.W.t(), 2) * pow((groundTruth - p), 2.0);
-    deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(dReLU(nonlin[nonlin.size() -1]), 2.0));
+    if(!fcConfig.empty()){
+        delta[delta.size() - 1] = delta[delta.size() -1].mul(dReLU(nonlin[nonlin.size() -1]));
+        deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(dReLU(nonlin[nonlin.size() -1]), 2.0));
+    }
 //    deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(dsigmoid_a(acti[acti.size() -1]), 2.0));
     //deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(factor[factor.size() - 1], 2.0));
-
-    if(fcConfig[fcConfig.size() - 1].DropoutRate < 1.0){
+    if(!fcConfig.empty() && fcConfig[fcConfig.size() - 1].DropoutRate < 1.0){
         delta[delta.size() - 1] = delta[delta.size() -1].mul(bernoulli[bernoulli.size() - 1]);
         deltad2[deltad2.size() - 1] = deltad2[deltad2.size() -1].mul(pow(bernoulli[bernoulli.size() - 1], 2.0));
     } 
-
     for(int i = delta.size() - 2; i >= 0; i--){
         delta[i] = hLayers[i].W.t() * delta[i + 1];
         deltad2[i] = pow(hLayers[i].W.t(), 2.0) * deltad2[i + 1];
@@ -169,7 +167,6 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
             save2txt(delta[i], path, tmp);
         }
     $$_LOG
-
     for(int i = fcConfig.size() - 1; i >= 0; i--){
         hLayers[i].Wgrad = delta[i + 1] * (hidden[i]).t();
         hLayers[i].Wgrad = hLayers[i].Wgrad / nsamples + fcConfig[i].WeightDecay * hLayers[i].W;

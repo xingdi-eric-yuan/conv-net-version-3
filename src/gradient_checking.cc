@@ -7,6 +7,7 @@ void
 gradientChecking_ConvLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, vector<Mat> &x, Mat &y){
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
+    if(CLayers.empty()) return;
     getNetworkCost(x, y, CLayers, hLayers, smr);
     int a = 0;
     int b = 0;
@@ -56,6 +57,7 @@ void
 gradientChecking_FullConnectLayer(vector<Cvl> &CLayers, vector<Fcl> &hLayers, Smr &smr, vector<Mat> &x, Mat &y){
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
+    if(hLayers.empty()) return;
     getNetworkCost(x, y, CLayers, hLayers, smr);
     int a = 0;
     Mat grad;

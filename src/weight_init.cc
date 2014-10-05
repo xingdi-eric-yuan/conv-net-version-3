@@ -81,16 +81,22 @@ ConvNetInitPrarms(vector<Cvl> &ConvLayers, vector<Fcl> &HiddenLayers, Smr &smr, 
     for(int i = 0; i < ConvLayers.size(); i++){
         hiddenfeatures *= convConfig[i].KernelAmount;
     }
-    Fcl tpntw;
-    weightRandomInit(tpntw, hiddenfeatures * 3, fcConfig[0].NumHiddenNeurons);
-    HiddenLayers.push_back(tpntw);
-    for(int i = 1; i < fcConfig.size(); i++){
-        Fcl tpntw2;
-        weightRandomInit(tpntw2, fcConfig[i - 1].NumHiddenNeurons, fcConfig[i].NumHiddenNeurons);
-        HiddenLayers.push_back(tpntw2);
+    if(fcConfig.size() > 0){
+        Fcl tpntw; 
+        weightRandomInit(tpntw, hiddenfeatures * 3, fcConfig[0].NumHiddenNeurons);
+        HiddenLayers.push_back(tpntw);
+        for(int i = 1; i < fcConfig.size(); i++){
+            Fcl tpntw2;
+            weightRandomInit(tpntw2, fcConfig[i - 1].NumHiddenNeurons, fcConfig[i].NumHiddenNeurons);
+            HiddenLayers.push_back(tpntw2);
+        }
     }
     // Init Softmax layer
-    weightRandomInit(smr, softmaxConfig.NumClasses, fcConfig[fcConfig.size() - 1].NumHiddenNeurons);
+    if(fcConfig.size() == 0){
+        weightRandomInit(smr, softmaxConfig.NumClasses, hiddenfeatures * 3);
+    }else{
+        weightRandomInit(smr, softmaxConfig.NumClasses, fcConfig[fcConfig.size() - 1].NumHiddenNeurons);
+    }
 }
 
 
