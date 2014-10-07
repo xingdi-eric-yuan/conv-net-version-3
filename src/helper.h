@@ -15,4 +15,6 @@ void unconcatenateMat(const vector<Mat>&, vector<vector<Mat> >*, int);
 Mat concatenateMat(const vector<vector<Mat> >&);
 Mat concatenateMat(const vector<Mat>&, int );
 
+void splitChannels(vector<vector<Mat> >&);
+
 double getLearningRate(const Mat&);

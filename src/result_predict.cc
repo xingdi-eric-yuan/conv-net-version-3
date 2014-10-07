@@ -10,25 +10,16 @@ resultPredict(const Mat &_x, const vector<Cvl> &CLayers, const vector<Fcl> &hLay
     vector<Mat> x;
     x.push_back(_x);
     // Conv & Pooling
-    unordered_map<string, Mat> cpmap;
-    unordered_map<string, vector<vector<Point> > > locmap;
-    convAndPooling(x, CLayers, cpmap, locmap, true);
-    vector<Mat> P;
-    vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
-    for(int i = 0; i<vecstr.size(); i++){
-        P.push_back(cpmap.at(vecstr[i]));
-    }
-    Mat convolvedX = concatenateMat(P, nsamples);
-    P.clear();
+    vector<vector<Mat> > conved;
+    convAndPooling(x, CLayers, conved);
+    splitChannels(conved);
+    Mat convolvedX = concatenateMat(conved);
+
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
-    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
-    //hidden[0] = hidden[0].mul(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
-        //tmpacti = tmpacti.mul(_factor);
 //        tmpacti = sigmoid(tmpacti);
         tmpacti = ReLU(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0) tmpacti = tmpacti.mul(fcConfig[i - 1].DropoutRate);
@@ -42,10 +33,13 @@ resultPredict(const Mat &_x, const vector<Cvl> &CLayers, const vector<Fcl> &hLay
     minMaxLoc(M(Rect(0, 0, 1, M.rows)), &minValue, &maxValue, &minLoc, &maxLoc);
     result = (int) maxLoc.y;
     // destructor
+    for(int i = 0; i < conved.size(); i++){
+        conved[i].clear();
+    }
+    conved.clear();
     M.release();
-    cpmap.clear();
-    locmap.clear();
     hidden.clear();
+    convolvedX.release();
     return result;
 }
 
@@ -54,25 +48,16 @@ resultPredict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl
  
     int nsamples = x.size();
     // Conv & Pooling
-    unordered_map<string, Mat> cpmap;
-    unordered_map<string, vector<vector<Point> > > locmap;
-    convAndPooling(x, CLayers, cpmap, locmap, true);
-    vector<Mat> P;
-    vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
-    for(int i = 0; i<vecstr.size(); i++){
-        P.push_back(cpmap.at(vecstr[i]));
-    }
-    Mat convolvedX = concatenateMat(P, nsamples);
-    P.clear();
+    vector<vector<Mat> > conved;
+    convAndPooling(x, CLayers, conved);
+    splitChannels(conved);
+    Mat convolvedX = concatenateMat(conved);
+
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
-    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
-    //hidden[0] = hidden[0].mul(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
-        //tmpacti = tmpacti.mul(_factor);
 //        tmpacti = sigmoid(tmpacti);
         tmpacti = ReLU(tmpacti);
         if(fcConfig[i - 1].DropoutRate < 1.0) tmpacti = tmpacti.mul(fcConfig[i - 1].DropoutRate);
@@ -88,46 +73,22 @@ resultPredict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl
         result.ATD(0, i) = (int) maxLoc.y;
     }
     // destructor
+    for(int i = 0; i < conved.size(); i++){
+        conved[i].clear();
+    }
+    conved.clear();
     M.release();
-    cpmap.clear();
-    locmap.clear();
     hidden.clear();
+    convolvedX.release();
     return result;
 }
 
 
 void 
-testNetwork(const vector<Mat> &testX, const Mat &testY, const vector<Cvl> &CLayers, const vector<Fcl> &hLayers, const Smr &smr){
-    // Test use test set
-    // Because it may leads to lack of memory if testing the whole dataset at 
-    // one time, so separate the dataset into small pieces of batches (say, batch size = 100).
-    // 
-    int batchSize = 100;
-    Mat result = Mat::zeros(1, testX.size(), CV_64FC1);
-    vector<Mat> tmpBatch;
-    int batch_amount = testX.size() / batchSize;
-    for(int i = 0; i < batch_amount; i++){
-        //cout<<"processing batch No. "<<i<<endl;
-        for(int j = 0; j < batchSize; j++){
-            tmpBatch.push_back(testX[i * batchSize + j]);
-        }
-        Mat resultBatch = resultPredict(tmpBatch, CLayers, hLayers, smr);
-        Rect roi = Rect(i * batchSize, 0, batchSize, 1);
-        resultBatch.copyTo(result(roi));
-        tmpBatch.clear();
-    }
-    if(testX.size() % batchSize){
-        //cout<<"processing batch No. "<<batch_amount<<endl;
-        for(int j = 0; j < testX.size() % batchSize; j++){
-            tmpBatch.push_back(testX[batch_amount * batchSize + j]);
-        }
-        Mat resultBatch = resultPredict(tmpBatch, CLayers, hLayers, smr);
-        Rect roi = Rect(batch_amount * batchSize, 0, testX.size() % batchSize, 1);
-        resultBatch.copyTo(result(roi));
-        ++ batch_amount;
-        tmpBatch.clear();
-    }
-
+testNetwork(const vector<Mat> &testX, const Mat &testY, const vector<Cvl> &CLayers, const vector<Fcl> &hLayers, const Smr &smr){   
+    // fixed the result predict method, avoid using hash map, so 
+    // it's ok to do all of them in one call
+    Mat result = resultPredict(testX, CLayers, hLayers, smr);
     Mat err;
     testY.copyTo(err);
     err -= result;

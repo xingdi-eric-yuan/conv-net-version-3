@@ -44,7 +44,7 @@ minMaxLoc(const Mat &img, Scalar &minVal, Scalar &maxVal, vector<Point> &minLoc,
 }
 
 Mat
-Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat, bool isTest){
+Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat){
     if(pVert == 1 && pHori == 1){
         vector<Point> tppt;
         for(int ch = 0; ch < 3; ch++){
@@ -90,20 +90,16 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
                 // Stochastic Pooling
                 Scalar sumval = sum(temp);
                 Mat prob = temp.mul(Reciprocal(sumval));
-                if(isTest){
-                    val = sum(prob.mul(temp));
-                }else{
-                    int ran = rand() % (temp.rows * temp.cols);
-                    vector<Point> loc = findLocCh3(prob, ran);
-                    for(int ch = 0; ch < loc.size(); ch++){
-                        val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
-                    }
-                    vector<Point> tppt;
-                    for(int ch = 0; ch < loc.size(); ch++){
-                        tppt.push_back(Point(loc[ch].x + j * pHori, loc[ch].y + i * pVert));
-                    }
-                    locat.push_back(tppt);
+                int ran = rand() % (temp.rows * temp.cols);
+                vector<Point> loc = findLocCh3(prob, ran);
+                for(int ch = 0; ch < loc.size(); ch++){
+                    val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
                 }
+                vector<Point> tppt;
+                for(int ch = 0; ch < loc.size(); ch++){
+                    tppt.push_back(Point(loc[ch].x + j * pHori, loc[ch].y + i * pVert));
+                }
+                locat.push_back(tppt);            
                 prob.release();
             }
             res.AT3D(i, j) = Scalar2Vec3d(val);
@@ -113,6 +109,56 @@ Pooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Poi
     newM.release();
     return res;
 }
+
+
+Mat
+Pooling(const Mat &M, int pVert, int pHori, int poolingMethod){
+    if(pVert == 1 && pHori == 1){
+        Mat res;
+        M.copyTo(res);
+        return res;
+    }
+    int remX = M.cols % pHori;
+    int remY = M.rows % pVert;
+    Mat newM;
+    if(remX == 0 && remY == 0) M.copyTo(newM);
+    else{
+        Rect roi = Rect(remX / 2, remY / 2, M.cols - remX, M.rows - remY);
+        M(roi).copyTo(newM);
+    }
+    Mat res = Mat::zeros(newM.rows / pVert, newM.cols / pHori, CV_64FC3);
+    for(int i=0; i<res.rows; i++){
+        for(int j=0; j<res.cols; j++){
+            Mat temp;
+            Rect roi = Rect(j * pHori, i * pVert, pHori, pVert);
+            newM(roi).copyTo(temp);
+            Scalar val = Scalar(0.0, 0.0, 0.0);
+            // for Max Pooling
+            if(POOL_MAX == poolingMethod){ 
+                Scalar minVal = Scalar(0.0, 0.0, 0.0);
+                Scalar maxVal = Scalar(0.0, 0.0, 0.0);
+                vector<Point> minLoc; 
+                vector<Point> maxLoc;
+                minMaxLoc( temp, minVal, maxVal, minLoc, maxLoc );
+                val = maxVal;
+            }elif(POOL_MEAN == poolingMethod){
+                // Mean Pooling
+                val = sum(temp).mul(1 / (pVert * pHori));
+            }elif(POOL_STOCHASTIC == poolingMethod){
+                // Stochastic Pooling
+                Scalar sumval = sum(temp);
+                Mat prob = temp.mul(Reciprocal(sumval));
+                val = sum(prob.mul(temp));
+                prob.release();
+            }
+            res.AT3D(i, j) = Scalar2Vec3d(val);
+            temp.release();
+        }
+    }
+    newM.release();
+    return res;
+}
+
 
 Mat 
 UnPooling(const Mat &M, int pVert, int pHori, int poolingMethod, vector<vector<Point> > &locat){
@@ -173,6 +219,38 @@ localResponseNorm(const unordered_map<string, Mat> &map, string str){
 }
 
 Mat
+localResponseNorm(const vector<vector<Mat> > &vec, int cl, int k, int s, int m){
+
+    vector<Mat>::const_iterator first = vec[s].begin() + m * convConfig[cl].KernelAmount;
+    vector<Mat>::const_iterator last = vec[s].begin() + (m + 1) * convConfig[cl].KernelAmount;
+    vector<Mat> current_layer(first, last);
+
+    Mat res;
+    vec[s][m * convConfig[cl].KernelAmount + k].copyTo(res);
+    Mat sum = Mat::zeros(res.rows, res.cols, CV_64FC3);
+    int from, to;
+    if(convConfig[cl].KernelAmount < lrn_size){
+        from = 0;
+        to = convConfig[cl].KernelAmount - 1;
+    }else{
+        from = (k - lrn_size / 2) >= 0 ? (k - lrn_size / 2) : 0;
+        to = (k + lrn_size / 2) <= (convConfig[cl].KernelAmount - 1) ? 
+             (k + lrn_size / 2) : (convConfig[cl].KernelAmount - 1);
+    }
+    for(int j = from; j <= to; j++){
+        Mat tmpmat;
+        current_layer[j].copyTo(tmpmat);
+        sum += pow(tmpmat, 2.0);
+        tmpmat.release();
+    }
+    sum = sum * lrn_scale / (to - from + 1) + Scalar::all(1.0);
+    divide(res, pow(sum, lrn_beta), res);
+    sum.release();
+    current_layer.clear();
+    return res;
+}
+
+Mat
 dlocalResponseNorm(const unordered_map<string, Mat> &map, string str){
 
     int current_kernel_num = getCurrentKernelNum(str);
@@ -218,7 +296,7 @@ dlocalResponseNorm(const unordered_map<string, Mat> &map, string str){
 void 
 convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers, 
                 unordered_map<string, Mat> &map, 
-                unordered_map<string, vector<vector<Point> > > &loc, bool isTest){
+                unordered_map<string, vector<vector<Point> > > &loc){
     // Conv & Pooling
     int nsamples = x.size();
     for(int m = 0; m < nsamples; m ++){
@@ -233,7 +311,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                     Mat temp = rot90(CLayers[cl].layer[k].W, 2);
                     Mat tmpconv = convCalc(x[m], temp, CONV_VALID);
                     if(convConfig[cl].is3chKernel) tmpconv += CLayers[cl].layer[k].b;
-                    else tmpconv += CLayers[cl].layer[k].b[0];
+                    else tmpconv += Scalar(CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0]);
                     tmpconv = nonLinearityC3(tmpconv);
                     map[s2] = tmpconv;
                     temp.release();
@@ -247,7 +325,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                     map.at(s2).copyTo(tmpconv);
                     if(convConfig[cl].useLRN) tmpconv = localResponseNorm(map, s2);
                     vector<vector<Point> > PoolingLoc;
-                    tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc, isTest);
+                    tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc);
                     string s3 = s2 + "P";
                     map[s3] = tmpconv;
                     loc[s3] = PoolingLoc;
@@ -264,7 +342,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                         Mat temp = rot90(CLayers[cl].layer[k].W, 2);
                         Mat tmpconv = convCalc(map.at(vec[tp]), temp, CONV_VALID);
                         if(convConfig[cl].is3chKernel) tmpconv += CLayers[cl].layer[k].b;
-                        else tmpconv += CLayers[cl].layer[k].b[0];
+                        else tmpconv += Scalar(CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0]);
                         tmpconv = nonLinearityC3(tmpconv);
                         map[s2] = tmpconv;
                         temp.release();
@@ -277,7 +355,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                         map.at(s2).copyTo(tmpconv);
                         if(convConfig[cl].useLRN) tmpconv = localResponseNorm(map, s2);
                         vector<vector<Point> > PoolingLoc;
-                        tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc, isTest);
+                        tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc);
                         string s3 = s2 + "P";
                         map[s3] = tmpconv;
                         loc[s3] = PoolingLoc;
@@ -347,7 +425,43 @@ hashDelta(const Mat &src, unordered_map<string, Mat> &map, int layersize, int ty
     }
 }
 
+void 
+convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers, vector<vector<Mat> > &res){
 
-
-
-
+    int nsamples = x.size();
+    res.clear();
+    for(int i = 0; i < nsamples; i++){
+        vector<Mat> tmp;
+        tmp.push_back(x[i]);
+        res.push_back(tmp);
+    }
+    vector<vector<Mat> > tpvec(nsamples);
+    for(int cl = 0; cl < convConfig.size(); cl++){
+        for(int i = 0; i < tpvec.size(); i++){
+            tpvec[i].clear();
+        }
+        int pdim = convConfig[cl].PoolingDim;
+        for(int s = 0; s < nsamples; s++){
+            for(int m = 0; m < res[s].size(); m++){
+                for(int k = 0; k < convConfig[cl].KernelAmount; k++){
+                    Mat temp = rot90(CLayers[cl].layer[k].W, 2);
+                    Mat tmpconv = convCalc(res[s][m], temp, CONV_VALID);
+                    if(convConfig[cl].is3chKernel) tmpconv += CLayers[cl].layer[k].b;
+                    else tmpconv += Scalar(CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0]);
+                    tmpconv = nonLinearityC3(tmpconv);
+                    tpvec[s].push_back(tmpconv);
+                }
+                for(int k = 0; k < convConfig[cl].KernelAmount; k++){
+                    Mat temp = tpvec[s][m * convConfig[cl].KernelAmount + k];
+                    if(convConfig[cl].useLRN) temp = localResponseNorm(tpvec, cl, k, s, m);
+                    tpvec[s][m] = Pooling(temp, pdim, pdim, pooling_method);
+                }
+            }
+        }
+        swap(res, tpvec);
+    }   
+    for(int i = 0; i < tpvec.size(); i++){
+        tpvec[i].clear();
+    }  
+    tpvec.clear();
+}

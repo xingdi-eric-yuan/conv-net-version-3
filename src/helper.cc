@@ -36,9 +36,11 @@ unconcatenateMat(const vector<Mat> &src, vector<vector<Mat> > *dst, int vsize){
             src[i * vsize + j].copyTo(img);
             vector<Mat> imgs;
             split(img, imgs);
-            for(int ch = 0; ch < imgs.size(); ch++){
-                tmp.push_back(imgs[ch]);
-            }
+            tmp.insert(tmp.end(), imgs.begin(), imgs.end());
+            imgs.clear();
+//            for(int ch = 0; ch < imgs.size(); ch++){
+//                tmp.push_back(imgs[ch]);
+//            }
         }
         dst -> push_back(tmp);
     }
@@ -66,6 +68,22 @@ concatenateMat(const vector<Mat> &vec, int matcols){
     vector<vector<Mat> > temp;
     unconcatenateMat(vec, &temp, vec.size() / matcols);
     return concatenateMat(temp);
+}
+
+void 
+splitChannels(vector<vector<Mat> > &vec){
+    vector<vector<Mat> > res;
+    for(int i = 0; i < vec.size(); i++){
+        vector<Mat> tpvec;
+        for(int j = 0; j < vec[i].size(); j++){
+            vector<Mat> imgs;
+            split(vec[i][j], imgs);
+            tpvec.insert(tpvec.end(), imgs.begin(), imgs.end());
+            imgs.clear();
+        }
+        res.push_back(tpvec);
+    }
+    swap(vec, res);
 }
 
 double 

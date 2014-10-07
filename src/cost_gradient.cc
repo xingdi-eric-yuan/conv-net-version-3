@@ -16,7 +16,7 @@ getNetworkCost(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl> &hLayer
     // Conv & Pooling
     unordered_map<string, Mat> cpmap;
     unordered_map<string, vector<vector<Point> > > locmap;
-    convAndPooling(x, CLayers, cpmap, locmap, false);
+    convAndPooling(x, CLayers, cpmap, locmap);
     vector<Mat> P;
     vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
     for(int i = 0; i<vecstr.size(); i++){
@@ -344,30 +344,18 @@ getNetworkLearningRate(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl>
 
     int nsamples = x.size();
     // Conv & Pooling
-    unordered_map<string, Mat> cpmap;
-    unordered_map<string, vector<vector<Point> > > locmap;
-    convAndPooling(x, CLayers, cpmap, locmap, false);
-    vector<Mat> P;
-    vector<string> vecstr = getLayerKey(nsamples, CLayers.size() - 1, KEY_POOL);
-    for(int i = 0; i<vecstr.size(); i++){
-        P.push_back(cpmap.at(vecstr[i]));
-    }
-    Mat convolvedX = concatenateMat(P, nsamples);
-    P.clear();
-
+    vector<vector<Mat> > conved;
+    convAndPooling(x, CLayers, conved);
+    splitChannels(conved);
+    Mat convolvedX = concatenateMat(conved);
     // full connected layers
     vector<Mat> hidden;
     hidden.push_back(convolvedX);
-    //double _factor = matNormalizeUnsign(hidden[0], -3.0, 3.0);
-    //hidden[0] = hidden[0].mul(_factor);
     for(int i = 1; i <= fcConfig.size(); i++){
         Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
-        //_factor = matNormalizeUnsign(tmpacti, -3.0, 3.0);
-        //tmpacti = tmpacti.mul(_factor);
         tmpacti = ReLU(tmpacti);
         hidden.push_back(tmpacti);
     }
-
     for(int i = 0; i < fcConfig.size(); i++){
         hLayers[i].lr_w = getLearningRate(hidden[i]);
         hLayers[i].lr_b = hLayers[i].lr_w;
@@ -377,8 +365,10 @@ getNetworkLearningRate(vector<Mat> &x, Mat &y, vector<Cvl> &CLayers, vector<Fcl>
     smr.lr_b = smr.lr_w;    
     cout<<"softmax layer, learning rate = "<<smr.lr_w<<endl;
     // destructor
-    cpmap.clear();
-    locmap.clear();
+    for(int i = 0; i < conved.size(); i++){
+        conved[i].clear();
+    }
+    conved.clear();
     
 }
 

@@ -134,7 +134,7 @@ trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fc
                 batchX.clear();
                 batchY.release();
                 $$LOG saveConvKernel(CLayers, path); $$_LOG
-            }   
+            } 
             if(! is_gradient_checking){
                 cout<<"Test training data: ";
                 testNetwork(x, y, CLayers, HiddenLayers, smr);
