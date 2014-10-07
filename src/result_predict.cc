@@ -86,9 +86,35 @@ resultPredict(const vector<Mat> &x, const vector<Cvl> &CLayers, const vector<Fcl
 
 void 
 testNetwork(const vector<Mat> &testX, const Mat &testY, const vector<Cvl> &CLayers, const vector<Fcl> &hLayers, const Smr &smr){   
-    // fixed the result predict method, avoid using hash map, so 
-    // it's ok to do all of them in one call
-    Mat result = resultPredict(testX, CLayers, hLayers, smr);
+    // Test use test set
+    // Because it may leads to lack of memory if testing the whole dataset at 
+    // one time, so separate the dataset into small pieces of batches (say, batch size = 100).
+    // 
+    int batchSize = 100;
+    Mat result = Mat::zeros(1, testX.size(), CV_64FC1);
+    vector<Mat> tmpBatch;
+    int batch_amount = testX.size() / batchSize;
+    for(int i = 0; i < batch_amount; i++){
+//        cout<<"processing batch No. "<<i<<endl;
+        for(int j = 0; j < batchSize; j++){
+            tmpBatch.push_back(testX[i * batchSize + j]);
+        }
+        Mat resultBatch = resultPredict(tmpBatch, CLayers, hLayers, smr);
+        Rect roi = Rect(i * batchSize, 0, batchSize, 1);
+        resultBatch.copyTo(result(roi));
+        tmpBatch.clear();
+    }
+    if(testX.size() % batchSize){
+//        cout<<"processing batch No. "<<batch_amount<<endl;
+        for(int j = 0; j < testX.size() % batchSize; j++){
+            tmpBatch.push_back(testX[batch_amount * batchSize + j]);
+        }
+        Mat resultBatch = resultPredict(tmpBatch, CLayers, hLayers, smr);
+        Rect roi = Rect(batch_amount * batchSize, 0, testX.size() % batchSize, 1);
+        resultBatch.copyTo(result(roi));
+        ++ batch_amount;
+        tmpBatch.clear();
+    }
     Mat err;
     testY.copyTo(err);
     err -= result;
