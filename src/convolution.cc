@@ -454,7 +454,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers, vector<vector<M
                 for(int k = 0; k < convConfig[cl].KernelAmount; k++){
                     Mat temp = tpvec[s][m * convConfig[cl].KernelAmount + k];
                     if(convConfig[cl].useLRN) temp = localResponseNorm(tpvec, cl, k, s, m);
-                    tpvec[s][m] = Pooling(temp, pdim, pdim, pooling_method);
+                    tpvec[s][m * convConfig[cl].KernelAmount + k] = Pooling(temp, pdim, pdim, pooling_method);
                 }
             }
         }
