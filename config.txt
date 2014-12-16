@@ -18,7 +18,6 @@ TRAINING_EPOCHS = 25;
 LRATE_W = 1e-3;
 LRATE_B = 8e-4;
 ITER_PER_EPO = 2000;
-LRATE_DECAY = 0.7;
 
 /*******************************************************
 *	

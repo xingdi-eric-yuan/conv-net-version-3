@@ -217,7 +217,6 @@ readConfigFile(string filepath){
     lrate_w = get_word_double(str, "LRATE_W");
     lrate_b = get_word_double(str, "LRATE_B");
     iter_per_epo = get_word_int(str, "ITER_PER_EPO");
-    lrate_decay = get_word_double(str, "LRATE_DECAY");
 
     cout<<"****************************************************************************"<<endl
         <<"**                    READ CONFIG FILE COMPLETE                             "<<endl
@@ -252,5 +251,4 @@ readConfigFile(string filepath){
     cout<<"learning rate for weight matrices = "<<lrate_w<<endl;
     cout<<"learning rate for bias = "<<lrate_b<<endl;
     cout<<"iteration per epoch = "<<iter_per_epo<<endl;
-    cout<<"learning rate decay = "<<lrate_decay<<endl<<endl;
 }

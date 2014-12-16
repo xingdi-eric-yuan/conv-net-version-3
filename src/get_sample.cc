@@ -2,7 +2,7 @@
 
 using namespace cv;
 using namespace std;
-
+/*
 void 
 getSample(const vector<Mat>& src, vector<Mat>* dst, int _size){
     dst -> clear();
@@ -49,6 +49,7 @@ getSample(const Mat& src, Mat* dst, int _size, int _type){
         src(roi).copyTo(*dst);
     }
 }
+*/
 
 void 
 getSample(const vector<Mat>& src1, vector<Mat>* dst1, const Mat& src2, Mat* dst2, int _size, int _type){
@@ -80,6 +81,16 @@ getSample(const vector<Mat>& src1, vector<Mat>* dst1, const Mat& src2, Mat* dst2
             src2(roi).copyTo(*dst2);
             return;
         }
+
+        random_shuffle(sample_vec.begin(), sample_vec.end());
+        for(int i = 0; i < _size; i++){
+            dst1 -> push_back(src1[sample_vec[i]]);
+            for(int j = 0; j < src2.rows; j++){
+                dst2 -> ATD(j, i) = src2.ATD(j, sample_vec[i]);
+            }
+        }
+
+        /*
         Mat m = Mat::ones(1, 1, CV_64FC1);
         randu(m, Scalar(0.0), Scalar(1.0));
         m *= (src2.cols - _size - 1);
@@ -89,6 +100,7 @@ getSample(const vector<Mat>& src1, vector<Mat>* dst1, const Mat& src2, Mat* dst2
         }
         Rect roi = Rect(randomNum, 0, _size, src2.rows);
         src2(roi).copyTo(*dst2);
+        */
     }
 }
 
