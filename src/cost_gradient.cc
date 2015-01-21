@@ -1,8 +1,5 @@
 #include "cost_gradient.h"
-
-#include "opencv2/core.hpp"
-#include "opencv2\core\core_c.h"
-
+#include "opencv2/core/core_c.h"
 using namespace cv;
 using namespace std;
 
