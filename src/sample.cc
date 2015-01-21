@@ -1,4 +1,5 @@
 #include "general_settings.h"
+#include <time.h>
 using namespace cv;
 using namespace std;
 
@@ -35,7 +36,12 @@ run(){
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgDim, nsamples);
     // Train network using Back Propogation
     if(use_log){
-        mkdir("log", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#ifdef _WIN32
+		system("md log");
+#else
+		mkdir("log", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif 
+       
     }
     trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr, testX, testY);
 //    if(! is_gradient_checking){

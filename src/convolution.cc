@@ -1,5 +1,5 @@
 #include "convolution.h"
-
+#include "opencv2/core/core_c.h"
 
 Point
 findLoc(const Mat &prob, int m){
@@ -311,7 +311,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                     Mat temp = rot90(CLayers[cl].layer[k].W, 2);
                     Mat tmpconv = convCalc(x[m], temp, CONV_VALID);
                     if(convConfig[cl].is3chKernel) tmpconv += CLayers[cl].layer[k].b;
-                    else tmpconv += Scalar(CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0]);
+                    else tmpconv += Scalar(CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0], CLayers[cl].layer[k].b[0]);/*zhxfl: why add three times*/
                     tmpconv = nonLinearityC3(tmpconv);
                     map[s2] = tmpconv;
                     temp.release();
@@ -325,7 +325,7 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers,
                     map.at(s2).copyTo(tmpconv);
                     if(convConfig[cl].useLRN) tmpconv = localResponseNorm(map, s2);
                     vector<vector<Point> > PoolingLoc;
-                    tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc);
+                   tmpconv = Pooling(tmpconv, pdim, pdim, pooling_method, PoolingLoc);
                     string s3 = s2 + "P";
                     map[s3] = tmpconv;
                     loc[s3] = PoolingLoc;
@@ -407,7 +407,7 @@ hashDelta(const Mat &src, unordered_map<string, Mat> &map, int layersize, int ty
             }
         }
         int sqDim = src.rows / vecstr.size() / 3;
-        int Dim = sqrt(sqDim);
+        int Dim = sqrt((double)sqDim);
         for(int i = 0; i < vecstr.size(); i++){
             Mat color = Mat::zeros(Dim, Dim, CV_64FC3);
             vector<Mat> channels;

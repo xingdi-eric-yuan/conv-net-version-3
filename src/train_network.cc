@@ -88,8 +88,19 @@ trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fc
         for(int epo = 1; epo <= training_epochs; epo++){
             for(; k <= iter_per_epo * epo; k++){
                 log_iter = k;
-                string path = "log/iter_" + to_string(log_iter);
-                $$LOG mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); $$_LOG
+                string path = "log/iter_" + to_string((long long)log_iter);
+                $$LOG 
+#ifdef _WIN32
+				string p = std::string("md ") + path;
+				replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+				std::cout<<p<<endl;
+
+				system(p.c_str());
+#else
+					mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
+#endif
+					
+				$$_LOG
                 if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.90;}
                 vector<Mat> batchX;
                 Mat batchY; 

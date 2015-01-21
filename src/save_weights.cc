@@ -58,15 +58,33 @@ save2txt3ch(const Mat &data, string path, string str){
 void
 saveConvKernel(const vector<Cvl> &CLayers, string path){
     string tmp = path + "/conv_kernels";
+#ifdef _WIN32
+	string p = std::string("md ") + tmp;
+	replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+	system(p.c_str());
+#else
     mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
     int layers = CLayers.size();
     for(int i = 0; i < layers; i++){
-        string str = tmp + "/layer_" + std::to_string(i);
+        string str = tmp + "/layer_" + std::to_string((long long)i);
+#ifdef _WIN32
+		string p = std::string("md ") + str;
+		replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+		system(p.c_str());
+#else
         mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
         int kernels = convConfig[i].KernelAmount;
         for(int j = 0; j < kernels; j++){
-            string str2 = str + "/kernel_" + std::to_string(j);
+            string str2 = str + "/kernel_" + std::to_string((long long)j);
+#ifdef _WIN32
+			string p = std::string("md ") + str2;
+			replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+			system(p.c_str());
+#else
             mkdir(str2.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
             str2 += "/";
             if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].W, str2, "");
             else save2txt(CLayers[i].layer[j].W, str2, "ch_0.txt");
@@ -76,15 +94,33 @@ saveConvKernel(const vector<Cvl> &CLayers, string path){
 void
 saveConvKernelGradient(const vector<Cvl> &CLayers, string path){
     string tmp = path + "/kernels_gradient";
+#ifdef _WIN32
+	string p = std::string("md ") + tmp;
+	replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+	system(p.c_str());
+#else
     mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
     int layers = CLayers.size();
     for(int i = 0; i < layers; i++){
-        string str = tmp + "/layer_" + std::to_string(i);
+        string str = tmp + "/layer_" + std::to_string((long long)i);
+#ifdef _WIN32
+		string p = std::string("md ") + str;
+		replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+		system(p.c_str());
+#else
         mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
         int kernels = convConfig[i].KernelAmount;
         for(int j = 0; j < kernels; j++){
-            string str2 = str + "/kernel_" + std::to_string(j);
+            string str2 = str + "/kernel_" + std::to_string((long long)j);
+#ifdef _WIN32
+			string p = std::string("md ") + str2;
+			replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
+			system(p.c_str());
+#else
             mkdir(str2.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
             str2 += "/";
             if(convConfig[i].is3chKernel) save2txt3ch(CLayers[i].layer[j].Wgrad, str2, "");
             else save2txt(CLayers[i].layer[j].Wgrad, str2, "ch_0.txt");
