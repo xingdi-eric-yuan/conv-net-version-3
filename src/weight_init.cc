@@ -77,23 +77,30 @@ ConvNetInitPrarms(vector<Cvl> &ConvLayers, vector<Fcl> &HiddenLayers, Smr &smr, 
         outDim = outDim - convConfig[i].KernelSize + 1;
         outDim = outDim / convConfig[i].PoolingDim;
     }
-    int hiddenfeatures = pow(outDim, 2);
+    int hiddenfeatures = pow((double)outDim, (double)2);
     for(int i = 0; i < ConvLayers.size(); i++){
         hiddenfeatures *= convConfig[i].KernelAmount;
     }
     if(fcConfig.size() > 0){
         Fcl tpntw; 
-        weightRandomInit(tpntw, hiddenfeatures * 3, fcConfig[0].NumHiddenNeurons);
+		if(convConfig[convConfig.size() - 1].is3chKernel)
+			weightRandomInit(tpntw, hiddenfeatures * 3, fcConfig[0].NumHiddenNeurons);
+		else 
+			weightRandomInit(tpntw, hiddenfeatures * 1, fcConfig[0].NumHiddenNeurons);
+
         HiddenLayers.push_back(tpntw);
         for(int i = 1; i < fcConfig.size(); i++){
             Fcl tpntw2;
             weightRandomInit(tpntw2, fcConfig[i - 1].NumHiddenNeurons, fcConfig[i].NumHiddenNeurons);
             HiddenLayers.push_back(tpntw2);
         }
-    }
+	}
     // Init Softmax layer
     if(fcConfig.size() == 0){
-        weightRandomInit(smr, softmaxConfig.NumClasses, hiddenfeatures * 3);
+		if(convConfig[convConfig.size() - 1].is3chKernel)
+			weightRandomInit(smr, softmaxConfig.NumClasses, hiddenfeatures * 3);
+		else 
+			weightRandomInit(smr, softmaxConfig.NumClasses, hiddenfeatures * 1);
     }else{
         weightRandomInit(smr, softmaxConfig.NumClasses, fcConfig[fcConfig.size() - 1].NumHiddenNeurons);
     }

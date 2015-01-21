@@ -8,6 +8,7 @@ read_batch(string filename, vector<Mat> &vec, Mat &label){
     ifstream file (filename, ios::binary);
     if (file.is_open()){
         int number_of_images = 10000;
+		//int number_of_images = 1000;
         int n_rows = 32;
         int n_cols = 32;
         for(int i = 0; i < number_of_images; ++i){
@@ -42,7 +43,7 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
     for(int i = 1; i <= 5; i++){
         vector<Mat> tpbatch;
         Mat tplabel = Mat::zeros(1, 10000, CV_64FC1);   
-        string name = filename + std::to_string(i) + ".bin";
+        string name = filename + std::to_string((long long)i) + ".bin";
         read_batch(name, tpbatch, tplabel);
         labels.push_back(tplabel);
         batches.push_back(tpbatch);
@@ -65,7 +66,9 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
     subView.release();
     // testX, testY
     filename = "cifar-10-batches-bin/test_batch.bin";
-    testY = Mat::zeros(1, 10000, CV_64FC1);    
+    testY = Mat::zeros(1, 10000, CV_64FC1);  
+	//testY = Mat::zeros(1, 1000, CV_64FC1);    
+
     read_batch(filename, testX, testY);
     preProcessing(trainX, testX);
 
@@ -79,7 +82,6 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
 
 Mat 
 concat(const vector<Mat> &vec){
-    
     int height = vec[0].rows * vec[0].cols;
     int width = vec.size();
     Mat res = Mat::zeros(height, width, CV_64FC3);
@@ -104,7 +106,7 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
         //cvtColor(testX[i], testX[i], CV_RGB2YCrCb);
         testX[i].convertTo(testX[i], CV_64FC3, 1.0/255, 0);
     }
-    /*
+    
     // get average
     Mat average = trainX[0] / (trainX.size() + testX.size());
     for(int i = 1; i < trainX.size(); i++)
@@ -116,28 +118,28 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
         trainX[i] -= average;
     for(int i = 0; i < testX.size(); i++)
         testX[i] -= average;
-        */
+
     // first convert vec of mat into a single mat
-    Mat tmp = concat(trainX);
-    Mat tmp2 = concat(testX);
-    Mat alldata = Mat::zeros(tmp.rows, tmp.cols + tmp2.cols, CV_64FC3);
-    
-    tmp.copyTo(alldata(Rect(0, 0, tmp.cols, tmp.rows)));
-    tmp2.copyTo(alldata(Rect(tmp.cols, 0, tmp2.cols, tmp.rows)));
-
-    Scalar mean;
-    Scalar stddev;
-    meanStdDev (alldata, mean, stddev);
-
-    for(int i = 0; i < trainX.size(); i++){
-        divide(trainX[i] - mean, stddev, trainX[i]);
-    }
-    for(int i = 0; i < testX.size(); i++){
-        divide(testX[i] - mean, stddev, testX[i]);
-    }
-    tmp.release();
-    tmp2.release();
-    alldata.release();
+//     Mat tmp = concat(trainX);
+//     Mat tmp2 = concat(testX);
+//     Mat alldata = Mat::zeros(tmp.rows, tmp.cols + tmp2.cols, CV_64FC3);
+//     
+//     tmp.copyTo(alldata(Rect(0, 0, tmp.cols, tmp.rows)));
+//     tmp2.copyTo(alldata(Rect(tmp.cols, 0, tmp2.cols, tmp.rows)));
+// 
+//     Scalar mean;
+//     Scalar stddev;
+//     meanStdDev(alldata, mean, stddev);
+// 
+//     for(int i = 0; i < trainX.size(); i++){
+//         divide(trainX[i] - mean, stddev, trainX[i]);
+//     }
+//     for(int i = 0; i < testX.size(); i++){
+//         divide(testX[i] - mean, stddev, testX[i]);
+//     }
+//     tmp.release();
+//     tmp2.release();
+//     alldata.release();
 }
 
 
