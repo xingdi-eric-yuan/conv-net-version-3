@@ -335,15 +335,21 @@ void
 						//        } 
 						$$_LOG
 							// destructor
-							p.release();
-						M.release();
-						groundTruth.release();
-						cpmap.clear();
-						locmap.clear();
-						acti.clear();
-						delta.clear();
-						bernoulli.clear();
-						nonlin.clear();
+					    p.release();
+					    M.release();
+					    groundTruth.release();
+					    cpmap.clear();
+					    unordered_map<string, Mat>().swap(cpmap);
+					    locmap.clear();
+					    unordered_map<string, vector<vector<Point> > >().swap(locmap);
+					    acti.clear();
+					    vector<Mat>().swap(acti);
+					    delta.clear();
+					    vector<Mat>().swap(delta);
+					    bernoulli.clear();
+					    vector<Mat>().swap(bernoulli);
+					    nonlin.clear();
+					    vector<Mat>().swap(nonlin);
 }
 
 void

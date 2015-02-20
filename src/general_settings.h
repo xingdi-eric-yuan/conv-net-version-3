@@ -17,6 +17,7 @@
 #include "get_sample.h"
 #include "train_network.h"
 #include "weight_init.h"
+#include "data_enlarge.h"
 #include <vector>
 #include <unordered_map>
 #include <string>
