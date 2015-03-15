@@ -6,6 +6,7 @@ using namespace std;
 std::vector<ConvLayerConfig> convConfig;
 std::vector<FullConnectLayerConfig> fcConfig;
 SoftmaxLayerConfig softmaxConfig;
+vector<int> sample_vec;
 ///////////////////////////////////
 // General parameters
 ///////////////////////////////////
@@ -29,6 +30,9 @@ run(){
     read_CIFAR10_data(trainX, testX, trainY, testY);
     int imgDim = trainX[0].rows;
     int nsamples = trainX.size();
+    for(int i = 0; i < nsamples; i++){
+        sample_vec.push_back(i);
+    }
     vector<Cvl> ConvLayers;
     vector<Fcl> HiddenLayers;
     Smr smr;

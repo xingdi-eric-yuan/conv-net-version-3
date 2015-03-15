@@ -17,6 +17,7 @@
 #include "get_sample.h"
 #include "train_network.h"
 #include "weight_init.h"
+#include "data_enlarge.h"
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -65,6 +66,7 @@ static double lrn_beta = 0.75;
 extern vector<ConvLayerConfig> convConfig;
 extern vector<FullConnectLayerConfig> fcConfig;
 extern SoftmaxLayerConfig softmaxConfig;
+extern vector<int> sample_vec;
 
 ///////////////////////////////////
 // General parameters
@@ -79,4 +81,3 @@ extern int training_epochs;
 extern double lrate_w;
 extern double lrate_b;
 extern int iter_per_epo;
-extern double lrate_decay;

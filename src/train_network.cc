@@ -103,7 +103,7 @@ trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fc
 				$$_LOG
                 if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.90;}
                 vector<Mat> batchX;
-                Mat batchY; 
+                Mat batchY = Mat::zeros(y.rows, batch_size, CV_64FC1); 
                 getSample(x, &batchX, y, &batchY, batch_size, SAMPLE_COLS);
                 //if(k == 20) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
                 cout<<"epoch: "<<epo<<", iter: "<<k;//<<endl;           
@@ -153,16 +153,21 @@ trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fc
                 testNetwork(tx, ty, CLayers, HiddenLayers, smr);
             }
         }
-
         v_smr_W.release();
         v_smr_b.release();
         v_hl_W.clear();
+        vector<Mat>().swap(v_hl_W);
         v_hl_b.clear();
+        vector<Mat>().swap(v_hl_b);
         v_cvl_W.clear();
+        vector<vector<Mat> >().swap(v_cvl_W);
         v_cvl_b.clear();
+        vector<vector<Scalar> >().swap(v_cvl_b);
         smrWd2.release();
         hlWd2.clear();
+        vector<Mat>().swap(hlWd2);
         cvlWd2.clear();
+        vector<vector<Mat> >().swap(cvlWd2);
     }
 }
 
