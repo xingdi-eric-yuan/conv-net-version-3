@@ -62,6 +62,7 @@ using namespace cv;
 static int lrn_size = 5;
 static double lrn_scale = 0.0000125;
 static double lrn_beta = 0.75;
+static double lrn_k = 2;
 
 extern vector<ConvLayerConfig> convConfig;
 extern vector<FullConnectLayerConfig> fcConfig;
