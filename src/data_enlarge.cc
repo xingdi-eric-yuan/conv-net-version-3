@@ -39,12 +39,10 @@ addWhiteNoise(const Mat &_from, Mat &_to, double stdev){
         for(int j = 0; j < _to.cols; j++){
 			Vec3d rgb = _to.at<Vec3d>(i, j);
 			for(int c = 0; c < _to.channels(); c++){
-				if(rgb.val[0] < 0.0) rgb.val[0] = 0.0;
+				if(rgb.val[c] < 0.0) rgb.val[c] = 0.0;
 				if(rgb.val[c] > 1.0) rgb.val[c] = 1.0;
 			}
 			_to.at<Vec3d>(i, j) = rgb;
-			//if(_to.ATD(i, j) < 0.0) _to.ATD(i, j) = 0.0;
-			//if(_to.ATD(i, j) > 1.0) _to.ATD(i, j) = 1.0;
         }
     }
 }
