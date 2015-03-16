@@ -212,7 +212,7 @@ localResponseNorm(const unordered_map<string, Mat> &map, string str){
         sum += pow(tmpmat, 2.0);
         tmpmat.release();
     }
-    sum = sum * lrn_scale / (to - from + 1) + Scalar::all(1.0);
+    sum = sum * lrn_scale  + lrn_k;
     divide(res, pow(sum, lrn_beta), res);
     sum.release();
     return res;
@@ -220,12 +220,8 @@ localResponseNorm(const unordered_map<string, Mat> &map, string str){
 
 Mat
 localResponseNorm(const vector<vector<Mat> > &vec, int cl, int k, int s, int m){
-
-    vector<Mat>::const_iterator first = vec[s].begin() + m * convConfig[cl].KernelAmount;
-    vector<Mat>::const_iterator last = vec[s].begin() + (m + 1) * convConfig[cl].KernelAmount;
-    vector<Mat> current_layer(first, last);
-
     Mat res;
+	//(tpvec, cl, k, s, m);
     vec[s][m * convConfig[cl].KernelAmount + k].copyTo(res);
     Mat sum = Mat::zeros(res.rows, res.cols, CV_64FC3);
     int from, to;
@@ -239,14 +235,13 @@ localResponseNorm(const vector<vector<Mat> > &vec, int cl, int k, int s, int m){
     }
     for(int j = from; j <= to; j++){
         Mat tmpmat;
-        current_layer[j].copyTo(tmpmat);
+        vec[s][m * convConfig[cl].KernelAmount + j].copyTo(tmpmat);
         sum += pow(tmpmat, 2.0);
         tmpmat.release();
     }
-    sum = sum * lrn_scale / (to - from + 1) + Scalar::all(1.0);
+    sum = sum * lrn_scale + lrn_k;
     divide(res, pow(sum, lrn_beta), res);
     sum.release();
-    current_layer.clear();
     return res;
 }
 
@@ -277,11 +272,11 @@ dlocalResponseNorm(const unordered_map<string, Mat> &map, string str){
         sum += pow(tmpmat, 2.0);
         tmpmat.release();
     }
-    sum = sum * lrn_scale / (to - from + 1) + Scalar::all(1.0);
+    sum = sum * lrn_scale + lrn_k;
 
     res = da.mul(pow(sum, lrn_beta));
     tmp = a.mul(a).mul(da);
-    tmp = tmp.mul(pow(sum, lrn_beta - 1)) * lrn_scale / (to - from + 1) * 2.0;
+    tmp = tmp.mul(pow(sum, lrn_beta - 1)) * lrn_scale * lrn_beta * 2.0;
     res -= tmp;
 
     pow(sum, lrn_beta * 2, tmp);
@@ -451,11 +446,25 @@ convAndPooling(const vector<Mat> &x, const vector<Cvl> &CLayers, vector<vector<M
                     tmpconv = nonLinearityC3(tmpconv);
                     tpvec[s].push_back(tmpconv);
                 }
-                for(int k = 0; k < convConfig[cl].KernelAmount; k++){
-                    Mat temp = tpvec[s][m * convConfig[cl].KernelAmount + k];
-                    if(convConfig[cl].useLRN) temp = localResponseNorm(tpvec, cl, k, s, m);
-                    tpvec[s][m * convConfig[cl].KernelAmount + k] = Pooling(temp, pdim, pdim, pooling_method);
-                }
+				if(convConfig[cl].useLRN) {
+					std::vector<Mat>tmp;
+					for(int k = 0; k < convConfig[cl].KernelAmount; k++){
+						Mat temp = tpvec[s][m * convConfig[cl].KernelAmount + k];
+						temp = localResponseNorm(tpvec, cl, k, s, m);
+						tmp.push_back(temp);
+					}
+					for(int k = 0; k < convConfig[cl].KernelAmount; k++){
+						Mat temp = tmp[k];
+						tpvec[s][m * convConfig[cl].KernelAmount + k] = Pooling(tmp[k], pdim, pdim, pooling_method);
+					}
+				}
+				else
+				{
+					for(int k = 0; k < convConfig[cl].KernelAmount; k++){
+						Mat temp = tpvec[s][m * convConfig[cl].KernelAmount + k];
+						tpvec[s][m * convConfig[cl].KernelAmount + k] = Pooling(temp, pdim, pdim, pooling_method);
+					}
+				}
             }
         }
         swap(res, tpvec);

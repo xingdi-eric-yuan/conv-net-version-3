@@ -147,7 +147,7 @@ getLayer(int nsamples, int layer){
 int 
 getSampleNum(string str){
     int i = 1;
-    while(str[i] >='0' && str[i] <= '9'){
+    while(str.size() > i && str[i] >='0' && str[i] <= '9'){
         ++ i;
     }
     string sub = str.substr(1, i - 1);
@@ -157,12 +157,12 @@ getSampleNum(string str){
 int 
 getCurrentKernelNum(string str){
     int i = str.length() - 1;
-    while(str[i] !='K'){
+    while(i >= 0 && str[i] !='K'){
         -- i;
     }
     int start = i + 1;
     i = start;
-    while(str[i] <= '9' && str[i] >= '0'){
+    while(str.size() > i && str[i] <= '9' && str[i] >= '0'){
         ++ i;
     }
     string sub = str.substr(start, i - start);
@@ -172,11 +172,11 @@ getCurrentKernelNum(string str){
 int
 getCurrentLayerNum(string str){
     int i = str.length() - 1; 
-    while(str[i] != 'K'){
+    while(i >= 0 && str[i] != 'K'){
         -- i;
     }
     int j = i;
-    while(str[j] != 'C'){
+    while(j >= 0 && str[j] != 'C'){
         -- j;
     }
     string res = str.substr(j + 1, i - j - 1);
@@ -186,7 +186,7 @@ getCurrentLayerNum(string str){
 string
 getCurrentLayer(string str){
     int i = str.length() - 1; 
-    while(str[i] != 'K'){
+    while(i >= 0 && str[i] != 'K'){
         -- i;
     }
     string res = str.substr(0, i);
@@ -196,12 +196,12 @@ getCurrentLayer(string str){
 string 
 getCurrentKernel(string str){
     int i = str.length() - 1;
-    while(str[i] !='K'){
+    while(i >= 0 && str[i] !='K'){
         -- i;
     }
     int start = i + 1;
     i = start;
-    while(str[i] <= '9' && str[i] >= '0'){
+    while(str.size() > i && str[i] <= '9' && str[i] >= '0'){
         ++ i;
     }
     string sub = str.substr(0, i);
@@ -211,7 +211,7 @@ getCurrentKernel(string str){
 string
 getPreviousLayerKey(string str, int keyType){
     int i = str.length() - 1; 
-    while(str[i] != 'C'){
+    while(i >= 0 && str[i] != 'C'){
         -- i;
     }
     string res = str.substr(0, i - 1);

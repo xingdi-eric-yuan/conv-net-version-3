@@ -37,8 +37,12 @@ addWhiteNoise(const Mat &_from, Mat &_to, double stdev){
     // how to make this faster?
     for(int i = 0; i < _to.rows; i++){
         for(int j = 0; j < _to.cols; j++){
-            if(_to.ATD(i, j) < 0.0) _to.ATD(i, j) = 0.0;
-            if(_to.ATD(i, j) > 1.0) _to.ATD(i, j) = 1.0;
+			Vec3d rgb = _to.at<Vec3d>(i, j);
+			for(int c = 0; c < _to.channels(); c++){
+				if(rgb.val[c] < 0.0) rgb.val[c] = 0.0;
+				if(rgb.val[c] > 1.0) rgb.val[c] = 1.0;
+			}
+			_to.at<Vec3d>(i, j) = rgb;
         }
     }
 }
@@ -83,8 +87,9 @@ dataEnlarge(vector<Mat>& data, Mat& label){
         data.push_back(tmp);
     }
     // copy label matrix
-    repeat(label, 1, 4, label);
-
+	cv::Mat tmp;
+    repeat(label, 1, 4, tmp); 
+	label = tmp;
 }
 
 

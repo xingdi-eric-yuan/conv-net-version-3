@@ -32,6 +32,7 @@ read_batch(string filename, vector<Mat> &vec, Mat &label){
             label.ATD(0, i) = (double)tplabel;
         }
     }
+	file.close();
 }
 
 void
@@ -40,7 +41,8 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
     filename = "cifar-10-batches-bin/data_batch_";
     vector<Mat> labels;
     vector<vector<Mat> > batches;
-    for(int i = 1; i <= 5; i++){
+	int number_batch = 1;
+    for(int i = 1; i <= number_batch; i++){
         vector<Mat> tpbatch;
         Mat tplabel = Mat::zeros(1, 10000, CV_64FC1);   
         string name = filename + std::to_string((long long)i) + ".bin";
@@ -50,15 +52,15 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
         tpbatch.clear();
     }
     // trainX
-    trainX.reserve(batches[0].size() * 5);
-    for(int i = 0; i < 5; i++){
+    trainX.reserve(batches[0].size() * number_batch);
+    for(int i = 0; i < number_batch; i++){
         trainX.insert(trainX.end(), batches[i].begin(), batches[i].end());
     }
     // trainY
-    trainY = Mat::zeros(1, 50000, CV_64FC1);
+    trainY = Mat::zeros(1, 10000 * number_batch, CV_64FC1);
     Rect roi;
     Mat subView;
-    for(int i = 0; i < 5; i++){
+    for(int i = 0; i < number_batch; i++){
         roi = cv::Rect(labels[i].cols * i, 0, labels[i].cols, 1);
         subView = trainY(roi);
         labels[i].copyTo(subView);
