@@ -3,172 +3,277 @@
 using namespace cv;
 using namespace std;
 
+void 
+forwardPassInit(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*> &flow){
+    // cout<<"---------------- forward init"<<endl;
+    // forward pass
+    int batch_size = 0;
+    for(int i = 0; i < flow.size(); i++){
+        //cout<<flow[i] -> layer_name<<endl;
+        if(flow[i] -> layer_type == "input"){
+            batch_size = ((input_layer*)flow[i]) -> batch_size;
+            ((input_layer*)flow[i]) -> forwardPass(batch_size, x, y);
+        }elif(flow[i] -> layer_type == "convolutional"){
+            ((convolutional_layer*)flow[i]) -> init_weight(flow[i - 1]);
+            ((convolutional_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "fully_connected"){
+            ((fully_connected_layer*)flow[i]) -> init_weight(flow[i - 1]);
+            ((fully_connected_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "softmax"){
+            ((softmax_layer*)flow[i]) -> init_weight(flow[i - 1]);
+            ((softmax_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "combine"){
+            ((combine_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "branch"){
+            ((branch_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "non_linearity"){
+            ((non_linearity_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "pooling"){
+            ((pooling_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "local_response_normalization"){
+            ((local_response_normalization_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]); 
+        }elif(flow[i] -> layer_type == "dropout"){
+            ((dropout_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }
+        if(flow[i] -> output_format == "matrix"){
+            //cout<<"output dimension is "<<flow[i] -> output_matrix.size()<<endl;
+        }else{
+            //cout<<"output dimension is "<<flow[i] -> output_vector.size()<<" * "<<flow[i] -> output_vector[0].size()<<" * "<<flow[i] -> output_vector[0][0].size()<<endl;
+        }
+    }    
+}
+
+void 
+forwardPass(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*> &flow){
+
+    // cout<<"---------------- forward "<<endl;
+    // forward pass
+    int batch_size = 0;
+    double J1 = 0, J2 = 0, J3 = 0, J4 = 0;
+    for(int i = 0; i < flow.size(); i++){
+        //cout<<flow[i] -> layer_name<<endl;
+        if(flow[i] -> layer_type == "input"){
+            batch_size = ((input_layer*)flow[i]) -> batch_size;
+            ((input_layer*)flow[i]) -> forwardPass(batch_size, x, y);
+        }elif(flow[i] -> layer_type == "convolutional"){
+            ((convolutional_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+            // get cost
+            for(int k = 0; k < ((convolutional_layer*)flow[i]) -> kernels.size(); ++k){
+                J4 += sum1(pow(((convolutional_layer*)flow[i]) -> kernels[k] -> w, 2.0)) * ((convolutional_layer*)flow[i]) -> kernels[k] -> weight_decay / 2.0;
+            }
+        }elif(flow[i] -> layer_type == "fully_connected"){
+            ((fully_connected_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+            // get cost
+            J3 += sum1(pow(((fully_connected_layer*)flow[i]) -> w, 2.0)) * ((fully_connected_layer*)flow[i]) -> weight_decay / 2.0;
+        }elif(flow[i] -> layer_type == "softmax"){
+            ((softmax_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+            // get cost
+            Mat groundTruth = Mat::zeros(((softmax_layer*)flow[i]) -> output_size, batch_size, CV_64FC1);
+            for(int i = 0; i < batch_size; i++){
+                groundTruth.ATD(((input_layer*)flow[0]) -> label.ATD(0, i), i) = 1.0;
+            }
+            J1 += - sum1(groundTruth.mul(log(flow[i] -> output_matrix))) / batch_size;
+            J2 += sum1(pow(((softmax_layer*)flow[i]) -> w, 2.0)) * ((softmax_layer*)flow[i]) -> weight_decay / 2;
+        }elif(flow[i] -> layer_type == "combine"){
+            ((combine_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "branch"){
+            ((branch_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "non_linearity"){
+            ((non_linearity_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "pooling"){
+            ((pooling_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "local_response_normalization"){
+            ((local_response_normalization_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "dropout"){
+            ((dropout_layer*)flow[i]) -> forwardPass(batch_size, flow[i - 1]);
+        }
+        if(flow[i] -> output_format == "matrix"){
+            //cout<<flow[i] -> output_matrix.size()<<endl;
+            //cout<<flow[i] -> output_matrix<<endl;
+        }else{
+            //cout<<flow[i] -> output_vector.size()<<", "<<flow[i] -> output_vector[0].size()<<", "<<flow[i] -> output_vector[0][0].size()<<endl;
+            //cout<<flow[i] -> output_vector[0][0]<<endl;
+        }
+    }
+    ((softmax_layer*)flow[flow.size() - 1]) -> network_cost = J1 + J2 + J3 + J4;
+    if(!is_gradient_checking) cout<<", J1 = "<<J1<<", J2 = "<<J2<<", J3 = "<<J3<<", J4 = "<<J4<<", Cost = "<<((softmax_layer*)flow[flow.size() - 1]) -> network_cost<<endl;       
+}
+
+void 
+forwardPassTest(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*> &flow){
+
+    // forward pass
+    int batch_size = x.size();
+    for(int i = 0; i < flow.size(); i++){
+        
+        if(flow[i] -> layer_type == "input"){
+            ((input_layer*)flow[i]) -> forwardPassTest(batch_size, x, y);
+        }elif(flow[i] -> layer_type == "convolutional"){
+            ((convolutional_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "fully_connected"){
+            ((fully_connected_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);   
+        }elif(flow[i] -> layer_type == "softmax"){
+            ((softmax_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "combine"){
+            ((combine_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "branch"){
+            ((branch_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "non_linearity"){
+            ((non_linearity_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "pooling"){
+            ((pooling_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "local_response_normalization"){
+            ((local_response_normalization_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }elif(flow[i] -> layer_type == "dropout"){
+            ((dropout_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
+        }
+
+
+/*
+        cout<<flow[i] -> layer_name<<endl;
+ 
+        Mat abc;
+        if(flow[i] -> output_format == "matrix"){
+            flow[i] -> output_matrix(Rect(0, 0, 2, 2)).copyTo(abc);
+        }else{
+            flow[i] -> output_vector[0][0](Rect(0, 0, 2, 2)).copyTo(abc);
+        }
+        cout<<abc<<endl;
+
+        //*/
+    }
+}
+
+void 
+backwardPass(std::vector<network_layer*> &flow){
+    //cout<<"---------------- backward"<<endl;
+    // backward pass
+    int batch_size = ((input_layer*)flow[0]) -> batch_size;
+    Mat groundTruth = Mat::zeros(((softmax_layer*)flow[flow.size() - 1]) -> output_size, batch_size, CV_64FC1);
+    for(int i = 0; i < batch_size; i++){
+        groundTruth.ATD(((input_layer*)flow[0]) -> label.ATD(0, i), i) = 1.0;
+    }
+    for(int i = flow.size() - 1; i >= 0; --i){
+        //cout<<flow[i] -> layer_name<<endl;
+        if(flow[i] -> layer_type == "input"){
+            ((input_layer*)flow[i]) -> backwardPass();
+        }elif(flow[i] -> layer_type == "convolutional"){
+            ((convolutional_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }elif(flow[i] -> layer_type == "fully_connected"){
+            ((fully_connected_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }elif(flow[i] -> layer_type == "softmax"){
+            ((softmax_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], groundTruth);
+        }elif(flow[i] -> layer_type == "combine"){
+            ((combine_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }elif(flow[i] -> layer_type == "branch"){
+            ((branch_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }elif(flow[i] -> layer_type == "non_linearity"){
+            ((non_linearity_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);   
+        }elif(flow[i] -> layer_type == "pooling"){
+            ((pooling_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }elif(flow[i] -> layer_type == "local_response_normalization"){
+            ((local_response_normalization_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }elif(flow[i] -> layer_type == "dropout"){
+            ((dropout_layer*)flow[i]) -> backwardPass(batch_size, flow[i - 1], flow[i + 1]);
+        }
+        if(flow[i] -> layer_name == "input") break;;
+        if(flow[i] -> output_format == "matrix"){
+            //cout<<"delta dimension is "<<flow[i] -> delta_matrix.size()<<endl;
+        }else{
+            //cout<<"delta dimension is "<<flow[i] -> delta_vector.size()<<" * "<<flow[i] -> delta_vector[0].size()<<" * "<<flow[i] -> delta_vector[0][0].size()<<endl;
+        }
+    }
+}
+
+void 
+updateNetwork(std::vector<network_layer*> &flow, int iter){
+    for(int i = 0; i < flow.size(); ++i){
+        //cout<<flow[i] -> layer_name<<endl;
+        if(flow[i] -> layer_type == "convolutional"){
+            ((convolutional_layer*)flow[i]) -> update(iter);
+        }elif(flow[i] -> layer_type == "fully_connected"){
+            ((fully_connected_layer*)flow[i]) -> update(iter);
+        }elif(flow[i] -> layer_type == "softmax"){
+            ((softmax_layer*)flow[i]) -> update(iter);
+        }
+    }
+}
+
+void 
+testNetwork(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*> &flow){
+    
+    int batch_size = 100;
+
+    int batch_amount = x.size() / batch_size;
+    int correct = 0;
+    for(int i = 0; i < batch_amount; i++){
+        std::vector<Mat> batchX(batch_size);
+        Mat batchY = Mat::zeros(1, batch_size, CV_64FC1);
+        for(int j = 0; j < batch_size; j++){
+            x[i * batch_size + j].copyTo(batchX[j]);
+        }
+        y(Rect(i * batch_size, 0, batch_size, 1)).copyTo(batchY);
+        forwardPassTest(batchX, batchY, flow);
+        Mat res = findMax(flow[flow.size() - 1] -> output_matrix);
+
+        //if(i < 3)
+        //cout<<" "<<flow[flow.size() - 1] -> output_matrix<<endl<<endl<<endl;
+        //cout<<" "<<res<<endl;
+        correct += compareMatrix(res, batchY);
+        batchY.release();
+        batchX.clear();
+        std::vector<Mat>().swap(batchX);
+    }
+    if(x.size() % batch_size){
+        std::vector<Mat> batchX(x.size() % batch_size);
+        Mat batchY = Mat::zeros(1, x.size() % batch_size, CV_64FC1);
+        for(int j = 0; j < batchX.size(); j++){
+            x[batch_amount * batch_size + j].copyTo(batchX[j]);
+        }
+        y(Rect(batch_amount * batch_size, 0, batchX.size(), 1)).copyTo(batchY);
+        forwardPassTest(batchX, batchY, flow);
+        Mat res = findMax(flow[flow.size() - 1] -> output_matrix);
+        correct += compareMatrix(res, batchY);
+        batchY.release();
+        batchX.clear();
+        std::vector<Mat>().swap(batchX);
+    }
+    cout<<"correct: "<<correct<<", total: "<<x.size()<<", accuracy: "<<double(correct) / (double)(x.size())<<endl;
+}
+
 void
-trainNetwork(const vector<Mat> &x, const Mat &y, vector<Cvl> &CLayers, vector<Fcl> &HiddenLayers, Smr &smr, const vector<Mat> &tx, const Mat &ty){
+trainNetwork(const std::vector<Mat> &x, const Mat &y, const std::vector<Mat> &tx, const Mat &ty, std::vector<network_layer*> &flow){
 
     if (is_gradient_checking){
-        vector<Mat> tpx;
-        Mat tpy;
-        getSample(x, &tpx, y, &tpy, 1, SAMPLE_COLS);
-        gradientChecking_ConvLayer(CLayers, HiddenLayers, smr, tpx, tpy);
-        gradientChecking_FullConnectLayer(CLayers, HiddenLayers, smr, tpx, tpy);
-        gradientChecking_SoftmaxLayer(CLayers, HiddenLayers, smr, tpx, tpy);
+        gradient_checking_network_layers(flow, x, y);
     }else{
     cout<<"****************************************************************************"<<endl
         <<"**                       TRAINING NETWORK......                             "<<endl
         <<"****************************************************************************"<<endl<<endl;
-
-        // define the velocity vectors.
-        Mat v_smr_W = Mat::zeros(smr.W.size(), CV_64FC1);
-        Mat v_smr_b = Mat::zeros(smr.b.size(), CV_64FC1);
-        Mat smrWd2 = Mat::zeros(smr.W.size(), CV_64FC1);
-        Mat smrbd2 = Mat::zeros(smr.b.size(), CV_64FC1);
-
-        vector<Mat> v_hl_W;
-        vector<Mat> v_hl_b;
-        vector<Mat> hlWd2;
-        vector<Mat> hlbd2;
-        for(int i = 0; i < HiddenLayers.size(); i ++){
-            Mat tempW = Mat::zeros(HiddenLayers[i].W.size(), CV_64FC1);
-            Mat tempb = Mat::zeros(HiddenLayers[i].b.size(), CV_64FC1);
-            Mat tempWd2 = Mat::zeros(tempW.size(), CV_64FC1);
-            Mat tempbd2 = Mat::zeros(tempb.size(), CV_64FC1);
-            v_hl_W.push_back(tempW);
-            v_hl_b.push_back(tempb);
-            hlWd2.push_back(tempWd2);
-            hlbd2.push_back(tempbd2);
-        }
+        forwardPassInit(x, y, flow);
         
-        vector<vector<Mat> > v_cvl_W;
-        vector<vector<Scalar> > v_cvl_b;
-        vector<vector<Mat> > cvlWd2;
-        vector<vector<Scalar> > cvlbd2;
-        for(int cl = 0; cl < CLayers.size(); cl++){
-            vector<Mat> tmpvecW;
-            vector<Scalar> tmpvecb;
-            vector<Mat> tmpvecWd2;
-            vector<Scalar> tmpvecbd2;
-            if(convConfig[cl].is3chKernel){
-                for(int i = 0; i < convConfig[cl].KernelAmount; i ++){
-                    Mat tempW = Mat::zeros(CLayers[cl].layer[i].W.size(), CV_64FC3);
-                    Scalar tempb = Scalar(0.0, 0.0, 0.0);
-                    Mat tempWd2 = Mat::zeros(tempW.size(), CV_64FC3);
-                    Scalar tempbd2 = Scalar(0.0, 0.0, 0.0);
-                    tmpvecW.push_back(tempW);
-                    tmpvecb.push_back(tempb);
-                    tmpvecWd2.push_back(tempWd2);
-                    tmpvecbd2.push_back(tempbd2);
-                }
-            }else{
-                for(int i = 0; i < convConfig[cl].KernelAmount; i ++){
-                    Mat tempW = Mat::zeros(CLayers[cl].layer[i].W.size(), CV_64FC1);
-                    Scalar tempb = Scalar(0.0);
-                    Mat tempWd2 = Mat::zeros(tempW.size(), CV_64FC1);
-                    Scalar tempbd2 = Scalar(0.0);
-                    tmpvecW.push_back(tempW);
-                    tmpvecb.push_back(tempb);
-                    tmpvecWd2.push_back(tempWd2);
-                    tmpvecbd2.push_back(tempbd2);
-                }
-            }
-            v_cvl_W.push_back(tmpvecW);
-            v_cvl_b.push_back(tmpvecb);
-            cvlWd2.push_back(tmpvecWd2);
-            cvlbd2.push_back(tmpvecbd2);
-        }
-        double Momentum_w = 0.5;
-        double Momentum_b = 0.5;
-        double Momentum_d2 = 0.5;
-        Mat lr_w;
-        Mat lr_b;
-        Scalar lr_b_s;
-        //double lr_b = lr_b_global;
-        double mu = 1e-2;
         int k = 0;
         for(int epo = 1; epo <= training_epochs; epo++){
+            
             for(; k <= iter_per_epo * epo; k++){
-                log_iter = k;
-                string path = "log/iter_" + to_string((long long)log_iter);
-                $$LOG 
-#ifdef _WIN32
-				string p = std::string("md ") + path;
-				replace_if(p.begin(), p.end(), bind2nd(std::equal_to<char>(),'/'), '\\');
-				std::cout<<p<<endl;
-
-				system(p.c_str());
-#else
-					mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
-#endif
-					
-				$$_LOG
-                if(k > 30) {Momentum_w = 0.95; Momentum_b = 0.95; Momentum_d2 = 0.90;}
-                vector<Mat> batchX;
-                Mat batchY = Mat::zeros(y.rows, batch_size, CV_64FC1); 
-                getSample(x, &batchX, y, &batchY, batch_size, SAMPLE_COLS);
-                //if(k == 20) getNetworkLearningRate(batchX, batchY, CLayers, HiddenLayers, smr);     
-                cout<<"epoch: "<<epo<<", iter: "<<k;//<<endl;           
-                getNetworkCost(batchX, batchY, CLayers, HiddenLayers, smr);
-                // softmax update
-                smrWd2 = Momentum_d2 * smrWd2 + (1.0 - Momentum_d2) * smr.Wd2;
-                smrbd2 = Momentum_d2 * smrbd2 + (1.0 - Momentum_d2) * smr.bd2;
-                lr_w = smr.lr_w / (smrWd2 + mu);
-                lr_b = smr.lr_b / (smrbd2 + mu);
-                v_smr_W = v_smr_W * Momentum_w + (1.0 - Momentum_w) * smr.Wgrad.mul(lr_w);
-                v_smr_b = v_smr_b * Momentum_b + (1.0 - Momentum_b) * smr.bgrad.mul(lr_b);
-                smr.W -= v_smr_W;
-                smr.b -= v_smr_b;
-                // full-connected layer update
-                for(int i = 0; i < HiddenLayers.size(); i++){
-                    hlWd2[i] = Momentum_d2 * hlWd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].Wd2;
-                    hlbd2[i] = Momentum_d2 * hlbd2[i] + (1.0 - Momentum_d2) * HiddenLayers[i].bd2;
-                    lr_w = HiddenLayers[i].lr_w / (hlWd2[i] + mu);
-                    lr_b = HiddenLayers[i].lr_b / (hlbd2[i] + mu);
-                    v_hl_W[i] = v_hl_W[i] * Momentum_w + (1.0 - Momentum_w) * HiddenLayers[i].Wgrad.mul(lr_w);
-                    v_hl_b[i] = v_hl_b[i] * Momentum_b + (1.0 - Momentum_b) * HiddenLayers[i].bgrad.mul(lr_b);
-                    HiddenLayers[i].W -= v_hl_W[i];
-                    HiddenLayers[i].b -= v_hl_b[i];
-                }
-                // convolutional layer update
-                for(int cl = 0; cl < CLayers.size(); cl++){
-                    for(int i = 0; i < convConfig[cl].KernelAmount; i++){
-                        cvlWd2[cl][i] = Momentum_d2 * cvlWd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].Wd2;
-                        cvlbd2[cl][i] = Momentum_d2 * cvlbd2[cl][i] + (1.0 - Momentum_d2) * CLayers[cl].layer[i].bd2;
-                        lr_w = CLayers[cl].layer[i].lr_w / (cvlWd2[cl][i] + mu);
-                        if(convConfig[cl].is3chKernel) lr_b_s = CLayers[cl].layer[i].lr_b / (cvlbd2[cl][i] + Scalar(mu, mu, mu));
-                        else lr_b_s = CLayers[cl].layer[i].lr_b / (cvlbd2[cl][i] + Scalar(mu));
-                        v_cvl_W[cl][i] = v_cvl_W[cl][i] * Momentum_w + (1.0 - Momentum_w) * CLayers[cl].layer[i].Wgrad.mul(lr_w);                        
-                        v_cvl_b[cl][i] = v_cvl_b[cl][i] * Momentum_b + (1.0 - Momentum_b) * CLayers[cl].layer[i].bgrad.mul(lr_b_s);
-                        CLayers[cl].layer[i].W -= v_cvl_W[cl][i];
-                        CLayers[cl].layer[i].b -= v_cvl_b[cl][i];
-                    }
-                }
-                batchX.clear();
-                batchY.release();
-                $$LOG saveConvKernel(CLayers, path); $$_LOG
-            } 
-            if(! is_gradient_checking){
-                cout<<"Test training data: ";
-                testNetwork(x, y, CLayers, HiddenLayers, smr);
-                cout<<"Test testing data: ";
-                testNetwork(tx, ty, CLayers, HiddenLayers, smr);
+                cout<<"epoch: "<<epo<<", iter: "<<k;//<<endl;     
+                forwardPass(x, y, flow);
+                backwardPass(flow);
+                updateNetwork(flow, k);
+                ++ tmpdebug;
+            }   
+            //cout<<"Test training data: "<<endl;
+            //testNetwork(x, y, flow);
+            cout<<"Test testing data: "<<endl;
+            testNetwork(tx, ty, flow);   
+            
+            if(use_log){
+                save2XML("log", i2str(k), flow);
             }
         }
-        v_smr_W.release();
-        v_smr_b.release();
-        v_hl_W.clear();
-        vector<Mat>().swap(v_hl_W);
-        v_hl_b.clear();
-        vector<Mat>().swap(v_hl_b);
-        v_cvl_W.clear();
-        vector<vector<Mat> >().swap(v_cvl_W);
-        v_cvl_b.clear();
-        vector<vector<Scalar> >().swap(v_cvl_b);
-        smrWd2.release();
-        hlWd2.clear();
-        vector<Mat>().swap(hlWd2);
-        cvlWd2.clear();
-        vector<vector<Mat> >().swap(cvlWd2);
+
     }
+
 }
 
 

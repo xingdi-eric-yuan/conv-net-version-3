@@ -5,10 +5,8 @@ using namespace std;
 
 Scalar 
 Reciprocal(const Scalar &s){
-    Scalar res = Scalar(1.0, 1.0, 1.0);
-    for(int i = 0; i < 3; i++){
-        res[i] = res[i] / s[i];
-    }
+    Scalar res;
+    divide(Scalar(1.0, 1.0, 1.0), s, res);
     return res;
 }
 
@@ -21,10 +19,10 @@ Reciprocal(const Mat &M){
     }
 }
 
-
 Mat 
 sigmoid(const Mat &M){
-    return 1.0 / (exp(-M) + 1.0);
+    Mat tmp = exp(-M) + 1.0;
+    return div(1.0, tmp);
 }
 
 Mat 
@@ -36,13 +34,16 @@ dsigmoid_a(const Mat &a){
 
 Mat 
 dsigmoid(const Mat &M){
-    return divide(exp(M), pow((1.0 + exp(M)), 2.0));
+    Mat tmp = exp(M);
+    Mat tmp2 = tmp + 1.0;
+    tmp2 = pow(tmp2, 2.0);
+    return divide(tmp, tmp2);
 }
 
 Mat
 ReLU(const Mat& M){
     Mat res = M > 0.0;
-    res.convertTo(res, CV_64FC1, 1.0 / 255, 0);
+    res.convertTo(res, CV_64FC1, 1.0 / 255.0, 0);
     res = res.mul(M);
     return res;
 }
@@ -50,8 +51,30 @@ ReLU(const Mat& M){
 Mat
 dReLU(const Mat& M){
     Mat res = M > 0.0;
-    res.convertTo(res, CV_64FC1, 1.0 / 255.0);
+    res.convertTo(res, CV_64FC1, 1.0 / 255.0, 0);
     return res;
+}
+
+Mat
+LeakyReLU(const Mat& M){
+    Mat p = M > 0.0;
+    p.convertTo(p, CV_64FC1, 1.0 / 255.0, 0);
+    p = p.mul(M);
+    Mat n = M < 0.0;
+    n.convertTo(n, CV_64FC1, 1.0 / 255.0, 0);
+    n = n.mul(M);
+    n = n.mul(1 / leaky_relu_alpha);
+    return p + n;
+}
+
+Mat
+dLeakyReLU(const Mat& M){
+    Mat p = M > 0.0;
+    p.convertTo(p, CV_64FC1, 1.0 / 255.0, 0);
+    Mat n = M < 0.0;
+    n.convertTo(n, CV_64FC1, 1.0 / 255.0, 0);
+    n = n.mul(1 / leaky_relu_alpha);
+    return p + n;
 }
 
 Mat 
@@ -73,35 +96,29 @@ dTanh(const Mat &M){
 }
 
 Mat 
-nonLinearity(const Mat &M){
-    if(non_linearity == NL_RELU){
+nonLinearity(const Mat &M, int method){
+    if(method == NL_RELU){
         return ReLU(M);
-    }elif(non_linearity == NL_TANH){
+    }elif(method == NL_TANH){
         return Tanh(M);
+    }elif(method == NL_LEAKY_RELU){
+        return LeakyReLU(M);
     }else{
         return sigmoid(M);
     }
 }
 
 Mat 
-dnonLinearity(const Mat &M){
-    if(non_linearity == NL_RELU){
+dnonLinearity(const Mat &M, int method){
+    if(method == NL_RELU){
         return dReLU(M);
-    }elif(non_linearity == NL_TANH){
+    }elif(method == NL_TANH){
         return dTanh(M);
+    }elif(method == NL_LEAKY_RELU){
+        return dLeakyReLU(M);
     }else{
         return dsigmoid(M);
     }
-}
-
-Mat 
-nonLinearityC3(const Mat &M){
-	return parallel3(nonLinearity, M);
-}
-
-Mat 
-dnonLinearityC3(const Mat &M){
-	return parallel3(dnonLinearity, M);
 }
 
 // Mimic rot90() in Matlab/GNU Octave.
@@ -117,39 +134,101 @@ rot90(const Mat &M, int k){
     return res;
 }
 
-// A Matlab/Octave style 2-d convolution function.
-// from http://blog.timmlinder.com/2011/07/opencv-equivalent-to-matlabs-conv2-function/
 Mat 
-conv2(const Mat &img, const Mat &kernel, int convtype) {
-    Mat dest;
+conv2(const Mat &img, const Mat &kernel, int convtype, int padding, int stride) {
+    Mat tmp;
     Mat source = img;
+    // padding
+    source = Mat();
+    copyMakeBorder(img, source, padding, padding, padding, padding, BORDER_CONSTANT, Scalar(0));
+    
+    // zero padding for CONV_FULL
+    int additionalRows, additionalCols;
     if(CONV_FULL == convtype) {
         source = Mat();
-        int additionalRows = kernel.rows-1, additionalCols = kernel.cols-1;
-        copyMakeBorder(img, source, (additionalRows+1)/2, additionalRows/2, (additionalCols+1)/2, additionalCols/2, BORDER_CONSTANT, Scalar(0));
-    }
-    Point anchor(kernel.cols - kernel.cols/2 - 1, kernel.rows - kernel.rows/2 - 1);
+        additionalRows = kernel.rows - 1;
+        additionalCols = kernel.cols - 1;
+        copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows / 2, (additionalCols + 1) / 2, additionalCols / 2, BORDER_CONSTANT, Scalar(0));
+    } 
+    Point anchor(kernel.cols - kernel.cols / 2 - 1, kernel.rows - kernel.rows / 2 - 1);
     int borderMode = BORDER_CONSTANT;
-    Mat fkernal;
-    flip(kernel, fkernal, -1);
-    filter2D(source, dest, img.depth(), fkernal, anchor, 0, borderMode);
-
+    Mat fkernel;
+    flip(kernel, fkernel, -1);
+    filter2D(source, tmp, img.depth(), fkernel, anchor, 0, borderMode);
+    // cut matrix for CONV_VALID
     if(CONV_VALID == convtype) {
-        dest = dest.colRange((kernel.cols-1)/2, dest.cols - kernel.cols/2)
-                   .rowRange((kernel.rows-1)/2, dest.rows - kernel.rows/2);
+        tmp = tmp.colRange((kernel.cols - 1) / 2, tmp.cols - kernel.cols / 2)
+                   .rowRange((kernel.rows - 1) / 2, tmp.rows - kernel.rows / 2);
     }
+    int xsize = tmp.cols / stride;
+    if(tmp.cols % stride > 0) ++xsize;
+    int ysize = tmp.rows / stride;
+    if(tmp.rows % stride > 0) ++ysize;
+    Mat dest = Mat::zeros(ysize, xsize, CV_64FC1);
+    for(int i = 0; i < dest.rows; i++){
+        for(int j = 0; j < dest.cols; j++){
+            dest.ATD(i, j) = tmp.ATD(i * stride, j * stride);
+        }
+    }
+    tmp.release();
     source.release();
-    fkernal.release();
+    fkernel.release();
     return dest;
 }
 
 Mat
-convCalc(const Mat &img, const Mat &kernel, int convtype){
-    if(img.channels() == 1 && kernel.channels() == 1){
-        return conv2(img, kernel, convtype);
+convCalc(const Mat &img, const Mat &kernel, int convtype, int padding, int stride){
+    Mat tmp;
+    img.copyTo(tmp);
+    if(tmp.channels() == 1 && kernel.channels() == 1){
+        return conv2(tmp, kernel, convtype, padding, stride);
     }else{
-        return parallel3(conv2, img, kernel, convtype);
+        return parallel3(conv2, tmp, kernel, convtype, padding, stride);
     }
+}
+
+Mat 
+doPadding(Mat &src, int pad){
+    Mat res;
+    copyMakeBorder(src, res, pad, pad, pad, pad, BORDER_CONSTANT, Scalar(0.0, 0.0, 0.0));
+    return res;
+}
+
+Mat 
+dePadding(Mat &src, int pad){
+    Mat res;
+    src(Rect(pad, pad, src.cols - pad * 2, src.rows - pad * 2)).copyTo(res);
+    return res;
+}
+
+Mat 
+interpolation(Mat &src, Mat &sizemat){
+
+    int stride = sizemat.rows / src.rows;
+    if(sizemat.rows % src.rows > 0) ++ stride;
+    if(stride == 0 || stride == 1) return src;
+    Mat res = Mat::zeros(sizemat.size(), CV_64FC3);
+    for(int i = 0; i < src.rows; i ++){
+        for(int j = 0; j < src.cols; j ++){
+            res.AT3D(i * stride, j * stride) = src.AT3D(i, j);
+        }
+    }
+    return res;
+}
+
+Mat 
+interpolation(Mat &src, int _size){
+    int stride = _size / src.rows;
+    if(_size % src.rows > 0) ++ stride;
+    //cout<<src.rows<<", "<<_size<<", "<<stride<<endl;
+    if(stride == 0 || stride == 1) return src;
+    Mat res = Mat::zeros(_size, _size, CV_64FC3);
+    for(int i = 0; i < src.rows; i ++){
+        for(int j = 0; j < src.cols; j ++){
+            res.AT3D(i * stride, j * stride) = src.AT3D(i, j);
+        }
+    }
+    return res;
 }
 
 // get KroneckerProduct 
@@ -158,14 +237,27 @@ convCalc(const Mat &img, const Mat &kernel, int convtype){
 Mat
 kron(const Mat &a, const Mat &b){
     Mat res = Mat::zeros(a.rows * b.rows, a.cols * b.cols, CV_64FC3);
-    for(int i=0; i<a.rows; i++){
-        for(int j=0; j<a.cols; j++){
+    Mat c;
+    vector<Mat> bs;
+    vector<Mat> cs;
+    for(int i = 0; i < a.rows; i++){
+        for(int j = 0; j < a.cols; j++){
+            bs.clear();
+            cs.clear();
             Rect roi = Rect(j * b.cols, i * b.rows, b.cols, b.rows);
             Mat temp = res(roi);
-            Mat c = b.mul(a.AT3D(i, j));
+            split(b , bs);
+            for(int ch = 0; ch < 3; ch++){
+                cs.push_back(bs[ch].mul(a.AT3D(i, j)[ch]));
+            }
+            merge(cs, c);
             c.copyTo(temp);
         }
     }
+    bs.clear();
+    vector<Mat>().swap(bs);
+    cs.clear();
+    vector<Mat>().swap(cs);
     return res;
 }
 
@@ -174,59 +266,10 @@ getBernoulliMatrix(int height, int width, double prob){
     // randu builds a Uniformly distributed matrix
     Mat ran = Mat::zeros(height, width, CV_64FC1);
     randu(ran, Scalar(0), Scalar(1.0));
-    Mat res = ran <= prob;
+    Mat res = ran >= prob;
     res.convertTo(res, CV_64FC1, 1.0 / 255, 0);
     ran.release();
     return res;
-}
-
-double
-matNormalize(const Mat &mat, Mat *out, double lower, double upper){
-    Mat m;
-    mat.copyTo(m);
-    double _factor = 0.0;
-    double mid = lower + (upper - lower) / 2.0;
-    double _max = max(m);
-    double _min = min(m);
-    if(is_gradient_checking) {m.copyTo(*out); return 1;}
-    if(_max < upper && _min > lower) {m.copyTo(*out); return 1;}
-    double _mid = _min + (_max - _min) / 2.0;
-
-    if(fabs(_min) > fabs(_max)){
-        _factor = _min / (upper - lower);
-    }else{
-        _factor = _max / (upper - lower);
-    }
-    m = m - _mid + mid;
-    if(_factor != 0){ 
-        m = m. mul(1 / _factor);
-        m.copyTo(*out);
-        return 1 / _factor;
-    }else{
-        m.copyTo(*out);
-        return 1;
-    }
-}
-
-double
-matNormalizeUnsign(const Mat &mat, double lower, double upper){
-    //return 1.0;
-    Mat m;
-    mat.copyTo(m);
-    double _factor = 0.0;
-    double _max = max(m);
-    double _min = min(m);
-
-    if(is_gradient_checking) return 1.0;
-    if(_max <= upper && _min >= lower) return 1.0;
-
-    if(fabs(_min) > fabs(_max)){
-        _factor = _min / lower;
-    }else{
-        _factor = _max / upper;
-    }
-    if(1.0 / _factor > 1e-6) return 1.0 / _factor;
-    else return 1.0;
 }
 
 // Follows are OpenCV maths
@@ -234,6 +277,53 @@ Mat
 exp(const Mat &src){
     Mat dst;
     exp(src, dst);
+    return dst;
+}
+
+Mat 
+div(double x, const Mat &src){
+    Mat dst;
+    src.copyTo(dst);
+    for(int i = 0; i < dst.rows; i++){
+        for(int j = 0; j < dst.cols; j++){
+            if(src.channels() == 3){
+               for(int ch = 0; ch < 3; ch++){
+                    if(dst.AT3D(i, j)[ch] != 0.0) dst.AT3D(i, j)[ch] = x / dst.AT3D(i, j)[ch];
+                }
+            }else{
+                if(dst.ATD(i, j) != 0.0) dst.ATD(i, j) = x / dst.ATD(i, j);
+            }
+        }
+    }
+    return dst;
+}
+
+Mat 
+div(const Mat &src, double x){
+    if(x == 0.0) return src;
+    Mat dst;
+    src.copyTo(dst);
+    for(int i = 0; i < dst.rows; i++){
+        for(int j = 0; j < dst.cols; j++){
+            if(src.channels() == 3){
+               for(int ch = 0; ch < 3; ch++){
+                    dst.AT3D(i, j)[ch] = dst.AT3D(i, j)[ch] / x;
+                }
+            }else{
+                dst.ATD(i, j) = dst.ATD(i, j) / x;
+            }
+        }
+    }
+    return dst;
+}
+
+Scalar 
+div(const Scalar &src, double x){
+    if(x == 0.0) return src;
+    Scalar dst(0.0, 0.0, 0.0);
+    for(int ch = 0; ch < 3; ch++){
+        dst[ch] = src[ch] / x;
+    }
     return dst;
 }
 
@@ -295,10 +385,353 @@ min(const Mat &m){
     return minval;
 }
 
+// Pooling with overlap
+// Max pooling and stochastic pooling supported
+// output size = (input size - window size) / stride + 1
+Mat 
+Pooling_with_overlap(const Mat &M, Size2i window_size, int stride, int poolingMethod, std::vector<std::vector<Point> > &locat){
+    Mat tmpres = Mat::zeros(M.rows - window_size.height + 1, M.cols - window_size.width + 1, CV_64FC3);
+    std::vector<std::vector<Point> > tmplocat;
+    for(int i = 0; i < M.rows - window_size.height + 1; ++i){
+        for(int j = 0; j < M.cols - window_size.width + 1; ++j){
+            Mat tmp;
+            M(Rect(j, i, window_size.width, window_size.height)).copyTo(tmp);
+
+            Scalar val = Scalar(0.0, 0.0, 0.0);
+            std::vector<Point> tppt;
+            if(POOL_MAX == poolingMethod){
+                Scalar minVal = Scalar(0.0, 0.0, 0.0);
+                Scalar maxVal = Scalar(0.0, 0.0, 0.0);
+                std::vector<Point> minLoc; 
+                std::vector<Point> maxLoc;
+                minMaxLoc(tmp, minVal, maxVal, minLoc, maxLoc );
+                val = maxVal;
+                for(int ch = 0; ch < 3; ch++){
+                    tppt.push_back(Point(maxLoc[ch].x + j, maxLoc[ch].y + i));
+                }
+            }elif(POOL_STOCHASTIC == poolingMethod){
+                
+                Scalar recip_sumval = sum(tmp);
+                divide(Scalar(1.0, 1.0, 1.0), recip_sumval, recip_sumval);
+                Mat prob = tmp.mul(recip_sumval);
+                int ran = rand() % (tmp.rows * tmp.cols);
+                std::vector<Point> loc = findLocCh3(prob, ran);
+                for(int ch = 0; ch < loc.size(); ch++){
+                    val[ch] = tmp.AT3D(loc[ch].y, loc[ch].x)[ch];
+                    tppt.push_back(Point(loc[ch].x + j, loc[ch].y + i));
+                }     
+                prob.release();
+            }
+            tmplocat.push_back(tppt);  
+            tmpres.AT3D(i, j) = Scalar2Vec3d(val);
+            tmp.release();
+            tppt.clear();
+            std::vector<Point>().swap(tppt);
+        }
+    }
+    int xsize = tmpres.cols / stride;
+    if(tmpres.cols % stride > 0) ++xsize;
+    int ysize = tmpres.rows / stride;
+    if(tmpres.rows % stride > 0) ++ysize;
+    Mat dest = Mat::zeros(ysize, xsize, CV_64FC3);
+
+    for(int i = 0; i < tmpres.rows; i++){
+        for(int j = 0; j < tmpres.cols; j++){
+            if(i % stride > 0 || j % stride > 0) continue;
+            for(int ch = 0; ch < 3; ++ch){
+                dest.AT3D(i / stride, j / stride)[ch] = tmpres.AT3D(i, j)[ch];
+            }
+            locat.push_back(tmplocat[i * tmpres.cols + j]);
+        }
+    }
+    tmplocat.clear();
+    std::vector<std::vector<Point> >().swap(tmplocat);
+    tmpres.release();
+    return dest;
+}
+
+Mat 
+Pooling_with_overlap_test(const Mat &M, Size2i window_size, int stride, int poolingMethod){
+    Mat tmpres = Mat::zeros(M.rows - window_size.height + 1, M.cols - window_size.width + 1, CV_64FC3);
+    std::vector<std::vector<Point> > tmplocat;
+    for(int i = 0; i < M.rows - window_size.height + 1; ++i){
+        for(int j = 0; j < M.cols - window_size.width + 1; ++j){
+            Mat tmp;
+            M(Rect(j, i, window_size.width, window_size.height)).copyTo(tmp);
+            Scalar val = Scalar(0.0, 0.0, 0.0);
+            if(POOL_MAX == poolingMethod){
+                Scalar minVal = Scalar(0.0, 0.0, 0.0);
+                Scalar maxVal = Scalar(0.0, 0.0, 0.0);
+                std::vector<Point> minLoc; 
+                std::vector<Point> maxLoc;
+                minMaxLoc(tmp, minVal, maxVal, minLoc, maxLoc );
+                val = maxVal;
+            }elif(POOL_STOCHASTIC == poolingMethod){
+                
+                Scalar recip_sumval = sum(tmp);
+                divide(Scalar(1.0, 1.0, 1.0), recip_sumval, recip_sumval);
+                Mat prob = tmp.mul(recip_sumval);
+                int ran = rand() % (tmp.rows * tmp.cols);
+                std::vector<Point> loc = findLocCh3(prob, ran);
+                for(int ch = 0; ch < loc.size(); ch++){
+                    val[ch] = tmp.AT3D(loc[ch].y, loc[ch].x)[ch];
+                }     
+                prob.release();
+            }
+            tmpres.AT3D(i, j) = Scalar2Vec3d(val);
+            tmp.release();
+        }
+    }
+    int xsize = tmpres.cols / stride;
+    if(tmpres.cols % stride > 0) ++xsize;
+    int ysize = tmpres.rows / stride;
+    if(tmpres.rows % stride > 0) ++ysize;
+    Mat dest = Mat::zeros(ysize, xsize, CV_64FC3);
+
+    for(int i = 0; i < tmpres.rows; i++){
+        for(int j = 0; j < tmpres.cols; j++){
+            if(i % stride > 0 || j % stride > 0) continue;
+            for(int ch = 0; ch < 3; ++ch){
+                dest.AT3D(i / stride, j / stride)[ch] = tmpres.AT3D(i, j)[ch];
+            }
+        }
+    }
+    tmpres.release();
+    return dest;
+}
 
 
+// Max pooling and stochastic pooling supported
+Mat 
+UnPooling_with_overlap(const Mat &M, Size2i window_size, int stride, int poolingMethod, std::vector<std::vector<Point> > &locat, Size2i up_size){
+    Mat res;
+    if(window_size.height == 1 && window_size.width == 1 && stride == 1){
+        M.copyTo(res);
+        return res;
+    }
+    res = Mat::zeros(up_size, CV_64FC3);
+    for(int i = 0; i < M.rows; i++){
+        for(int j = 0; j < M.cols; j++){
+            for(int ch = 0; ch < 3; ch++){
+                res.AT3D(locat[i * M.cols + j][ch].y, locat[i * M.cols + j][ch].x)[ch] += M.AT3D(i, j)[ch];
+            }
+        }
+    }
+    return res;
+}
+
+Mat
+Pooling(const Mat &M, int stride, int poolingMethod, std::vector<std::vector<Point> > &locat){
+    if(stride == 1){
+        std::vector<Point> tppt;
+        for(int i = 0; i < M.rows; i++){
+            for(int j = 0; j < M.cols; j++){
+                tppt.clear();
+                for(int ch = 0; ch < 3; ch++){
+                    tppt.push_back(Point(j, i));
+                }
+                locat.push_back(tppt);
+            }
+        }
+        Mat res;
+        M.copyTo(res);
+        return res;
+    }
+    Mat newM;
+    M.copyTo(newM);
+    Mat res = Mat::zeros(newM.rows / stride, newM.cols / stride, CV_64FC3);
+    for(int i=0; i<res.rows; i++){
+        for(int j=0; j<res.cols; j++){
+            Mat temp;
+            Rect roi = Rect(j * stride, i * stride, stride, stride);
+            newM(roi).copyTo(temp);
+            Scalar val = Scalar(0.0, 0.0, 0.0);
+            std::vector<Point> tppt;
+            // for Max Pooling
+            if(POOL_MAX == poolingMethod){ 
+                Scalar minVal = Scalar(0.0, 0.0, 0.0);
+                Scalar maxVal = Scalar(0.0, 0.0, 0.0);
+                std::vector<Point> minLoc; 
+                std::vector<Point> maxLoc;
+                minMaxLoc( temp, minVal, maxVal, minLoc, maxLoc );
+                val = maxVal;
+                for(int ch = 0; ch < 3; ch++){
+                    tppt.push_back(Point(maxLoc[ch].x + j * stride, maxLoc[ch].y + i * stride));
+                }
+            }elif(POOL_MEAN == poolingMethod){
+                // Mean Pooling
+                double recip = 1.0 / (stride * stride);
+                val = sum(temp).mul(Scalar(recip, recip, recip));
+                for(int ch = 0; ch < 3; ch++){
+                    tppt.push_back(Point(j * stride, i * stride));
+                }
+            }elif(POOL_STOCHASTIC == poolingMethod){
+                // Stochastic Pooling
+                Scalar recip_sumval = sum(temp);
+                divide(Scalar(1.0, 1.0, 1.0), recip_sumval, recip_sumval);
+                Mat prob = temp.mul(recip_sumval);
+                int ran = rand() % (temp.rows * temp.cols);
+                std::vector<Point> loc = findLocCh3(prob, ran);
+                for(int ch = 0; ch < loc.size(); ch++){
+                    val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
+                    tppt.push_back(Point(loc[ch].x + j * stride, loc[ch].y + i * stride));
+                }
+                prob.release();
+            }
+            res.AT3D(i, j) = Scalar2Vec3d(val);
+            locat.push_back(tppt);
+            temp.release();
+        }
+    }
+    newM.release();
+    return res;
+}
+
+Mat
+Pooling_test(const Mat &M, int stride, int poolingMethod){
+    if(stride == 1){
+        Mat res;
+        M.copyTo(res);
+        return res;
+    }
+    Mat newM;
+    M.copyTo(newM);
+    Mat res = Mat::zeros(newM.rows / stride, newM.cols / stride, CV_64FC3);
+    for(int i=0; i<res.rows; i++){
+        for(int j=0; j<res.cols; j++){
+            Mat temp;
+            Rect roi = Rect(j * stride, i * stride, stride, stride);
+            newM(roi).copyTo(temp);
+            Scalar val = Scalar(0.0, 0.0, 0.0);
+            // for Max Pooling
+            if(POOL_MAX == poolingMethod){ 
+                Scalar minVal = Scalar(0.0, 0.0, 0.0);
+                Scalar maxVal = Scalar(0.0, 0.0, 0.0);
+                std::vector<Point> minLoc; 
+                std::vector<Point> maxLoc;
+                minMaxLoc( temp, minVal, maxVal, minLoc, maxLoc );
+                val = maxVal;
+            }elif(POOL_MEAN == poolingMethod){
+                // Mean Pooling
+                double recip = 1.0 / (stride * stride);
+                val = sum(temp).mul(Scalar(recip, recip, recip));
+            }elif(POOL_STOCHASTIC == poolingMethod){
+                // Stochastic Pooling
+                Scalar recip_sumval = sum(temp);
+                divide(Scalar(1.0, 1.0, 1.0), recip_sumval, recip_sumval);
+                Mat prob = temp.mul(recip_sumval);
+                int ran = rand() % (temp.rows * temp.cols);
+                std::vector<Point> loc = findLocCh3(prob, ran);
+                for(int ch = 0; ch < loc.size(); ch++){
+                    val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
+                }
+                prob.release();
+            }
+            res.AT3D(i, j) = Scalar2Vec3d(val);
+            temp.release();
+        }
+    }
+    newM.release();
+    return res;
+}
+
+Mat 
+UnPooling(const Mat &M, int stride, int poolingMethod, std::vector<std::vector<Point> > &locat, Size2i up_size){
+    Mat res;
+    if(stride == 1){
+        M.copyTo(res);
+        return res;
+    }
+    if(POOL_MEAN == poolingMethod){
+
+        Mat one = cv::Mat(stride, stride, CV_64FC3, Scalar(1.0, 1.0, 1.0));
+        cout<<M.size()<<",     "<<one.size()<<endl;
+        res = kron(M, one);
+        divide(res, Scalar(stride * stride, stride * stride, stride * stride), res);
+        one.release();
+    }elif(POOL_MAX == poolingMethod || POOL_STOCHASTIC == poolingMethod){
+        res = Mat::zeros(M.rows * stride, M.cols * stride, CV_64FC3);
+        for(int i = 0; i < M.rows; i++){
+            for(int j = 0; j < M.cols; j++){
+                for(int ch = 0; ch < 3; ch++){
+                    res.AT3D(locat[i * M.cols + j][ch].y, locat[i * M.cols + j][ch].x)[ch] = M.AT3D(i, j)[ch];
+                }
+            }
+        }
+    }
+    copyMakeBorder(res, res, 0, up_size.height - res.rows, 0, up_size.width - res.cols, BORDER_CONSTANT, Scalar(0.0, 0.0, 0.0));
+    return res;
+}
+
+Point 
+findLoc(const Mat &prob, int m){
+    Mat temp, idx;
+    Point res = Point(0, 0);
+    prob.reshape(0, 1).copyTo(temp); 
+    sortIdx(temp, idx, CV_SORT_EVERY_ROW | CV_SORT_ASCENDING);
+    int i = idx.at<int>(0, m);
+    res.x = i % prob.cols;
+    res.y = i / prob.cols;
+    temp.release();
+    idx.release();
+    return res;
+}
+
+std::vector<Point> 
+findLocCh3(const Mat &prob, int m){
+    std::vector<Mat> probs;
+    split(prob , probs);
+    std::vector<Point> res;
+    for(int i = 0; i < probs.size(); i++){
+        res.push_back(findLoc(probs[i], m));
+    }
+    probs.clear();
+    std::vector<Mat>().swap(probs);
+    return res;
+}
+
+Mat 
+findMax(const Mat &M){
+    Mat tmp;
+    M.copyTo(tmp);
+    Mat result = Mat::zeros(1, tmp.cols, CV_64FC1);
+    double minValue, maxValue;
+    Point minLoc, maxLoc;
+    for(int i = 0; i < tmp.cols; i++){
+        minMaxLoc(tmp(Rect(i, 0, 1, tmp.rows)), &minValue, &maxValue, &minLoc, &maxLoc);
+        result.ATD(0, i) = (double) maxLoc.y;
+    }
+    return result;
+}
 
 
+void 
+minMaxLoc(const Mat &img, Scalar &minVal, Scalar &maxVal, std::vector<Point> &minLoc, std::vector<Point> &maxLoc){
+    std::vector<Mat> imgs;
+    split(img, imgs);
+    for(int i = 0; i < imgs.size(); i++){
+        Point min;
+        Point max;
+        double minval;
+        double maxval;
+        minMaxLoc( imgs[i], &minval, &maxval, &min, &max);
+        minLoc.push_back(min);
+        maxLoc.push_back(max);
+        minVal[i] = minval;
+        maxVal[i] = maxval;
+    }
+}
+
+int 
+compareMatrix(const Mat &a, const Mat &b){
+    Mat tmp;
+    b.copyTo(tmp);
+    tmp -= a;
+    Mat res = (tmp == 0.0);
+    res.convertTo(res, CV_64FC1, 1.0 / 255.0, 0);
+    tmp.release();
+    return (int)(sum1(res));
+}
 
 
 

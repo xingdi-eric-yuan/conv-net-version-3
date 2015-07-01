@@ -10,65 +10,152 @@
 
 IS_GRADIENT_CHECKING = false;
 USE_LOG = true;
-BATCH_SIZE = 50;
-POOLING_METHOD = POOL_MAX;
-NON_LINEARITY = NL_RELU;
-
-TRAINING_EPOCHS = 1;
-LRATE_W = 1e-3;
-LRATE_B = 8e-4;
+LEARNING_RATE_W = 1e-3;
+LEARNING_RATE_B = 3e-4;
+TRAINING_EPOCHS = 500;
 ITER_PER_EPO = 2000;
+MOMENTUM_W_INIT = 0.50;
+MOMENTUM_D2_INIT = 0.50;
+MOMENTUM_W_ADJUST = 0.95;
+MOMENTUM_D2_ADJUST = 0.90;
 
 /*******************************************************
-*	
+*
 *	Layers Config
 *
 *******************************************************/
 
 $
-LAYER = CONV;
-KERNEL_SIZE = 15;
-KERNEL_AMOUNT = 16;
-WEIGHT_DECAY = 1e-6;
-POOLING_DIM = 2;
-IS_3CH_KERNEL = true;
-USE_LRN = false;
+LAYER = input;
+NAME = input;
+OUTPUT_TYPE = image;
+BATCH_SIZE = 100;
 &
 
 $
-LAYER = CONV;
-KERNEL_SIZE = 6;
+LAYER = convolutional;
+NAME = conv1;
+OUTPUT_TYPE = image;
+KERNEL_SIZE = 7;
 KERNEL_AMOUNT = 16;
+PADDING = 0;
+STRIDE = 1;
+COMBINE_MAP = 8;
 WEIGHT_DECAY = 1e-6;
-POOLING_DIM = 2;
-IS_3CH_KERNEL = true;
-USE_LRN = false;
 &
 
 $
-LAYER = FC;
+LAYER = non_linearity;
+NAME = nl1;
+OUTPUT_TYPE = image;
+METHOD = leaky_relu;
+&
+
+$
+LAYER = local_response_normalization;
+NAME = lrn1;
+OUTPUT_TYPE = image;
+ALPHA = 0.000125;
+BETA = 0.75;
+K = 2.0;
+N = 5;
+&
+
+$
+LAYER = pooling;
+NAME = pool1;
+METHOD = max;
+OUTPUT_TYPE = image;
+OVERLAP = false;
+STRIDE = 2;
+&
+
+$
+LAYER = convolutional;
+NAME = conv2;
+OUTPUT_TYPE = image;
+KERNEL_SIZE = 8;
+KERNEL_AMOUNT = 16;
+PADDING = 0;
+STRIDE = 1;
+COMBINE_MAP = 8;
+WEIGHT_DECAY = 1e-6;
+&
+
+$
+LAYER = non_linearity;
+NAME = nl2;
+OUTPUT_TYPE = image;
+METHOD = leaky_relu;
+&
+
+$
+LAYER = local_response_normalization;
+NAME = lrn2;
+OUTPUT_TYPE = image;
+ALPHA = 0.000125;
+BETA = 0.75;
+K = 2.0;
+N = 5;
+&
+
+$
+LAYER = pooling;
+NAME = pool2;
+METHOD = max;
+OUTPUT_TYPE = image;
+OVERLAP = false;
+STRIDE = 2;
+&
+
+$
+LAYER = fully_connected;
+NAME = fc1;
+OUTPUT_TYPE = matrix;
 NUM_HIDDEN_NEURONS = 512;
 WEIGHT_DECAY = 1e-6;
+&
+
+$
+LAYER = non_linearity;
+NAME = nl3;
+OUTPUT_TYPE = matrix;
+METHOD = leaky_relu;
+&
+
+$
+LAYER = dropout;
+NAME = do1;
+OUTPUT_TYPE = matrix;
 DROPOUT_RATE = 0.5;
 &
 
 $
-LAYER = FC;
+LAYER = fully_connected;
+NAME = fc2;
+OUTPUT_TYPE = matrix;
 NUM_HIDDEN_NEURONS = 128;
 WEIGHT_DECAY = 1e-6;
+&
+
+$
+LAYER = non_linearity;
+NAME = nl4;
+OUTPUT_TYPE = matrix;
+METHOD = leaky_relu;
+&
+
+$
+LAYER = dropout;
+NAME = do2;
+OUTPUT_TYPE = matrix;
 DROPOUT_RATE = 0.5;
 &
 
 $
-LAYER = SOFTMAX;
+LAYER = softmax;
+NAME = sm;
+OUTPUT_TYPE = matrix;
 NUM_CLASSES = 10;
 WEIGHT_DECAY = 1e-6;
 &
-
-
-
-
-
-
-
-

@@ -2,22 +2,18 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#include "data_structure.h"
-#include "convolution.h"
-#include "string_proc.h"
-#include "channel_3.h"
-#include "cost_gradient.h"
-#include "gradient_checking.h"
-#include "helper.h"
+
+#include "layer_bank.h"
 #include "matrix_maths.h"
-#include "read_data.h"
-#include "result_predict.h"
+#include "channel_3.h"
+#include "converter.h"
 #include "read_config.h"
-#include "save_weights.h"
-#include "get_sample.h"
+#include "read_data.h"
 #include "train_network.h"
-#include "weight_init.h"
-#include "data_enlarge.h"
+#include "gradient_checking.h"
+#include "weights_IO.h"
+#include "data_augmentation.h"
+
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -29,56 +25,35 @@
 #define CONV_VALID 2
 // Pooling methods
 #define POOL_MAX 0
-#define POOL_MEAN 1 //don't use
+#define POOL_MEAN 1 
 #define POOL_STOCHASTIC 2
-// get Key type
-#define KEY_CONV 0
-#define KEY_POOL 1
-#define KEY_DELTA 2
-#define KEY_UP_DELTA 3
-#define KEY_HESSIAN 4
-#define KEY_UP_HESSIAN 5
 // non-linearity
 #define NL_SIGMOID 0
 #define NL_TANH 1
 #define NL_RELU 2
-// sample
-#define SAMPLE_ROWS 0
-#define SAMPLE_COLS 1
-// hash
-#define HASH_DELTA 0
-#define HASH_HESSIAN 1
+#define NL_LEAKY_RELU 3
 
 #define ATD at<double>
 #define AT3D at<cv::Vec3d>
 #define elif else if
-#define $$LOG if(use_log && log_iter % 1000 == 0){
-#define $$_LOG }
 
 using namespace std;
 using namespace cv;
 
-// Local Response Normalization
-static int lrn_size = 5;
-static double lrn_scale = 0.0000125;
-static double lrn_beta = 0.75;
-static double lrn_k = 2;
-
-extern vector<ConvLayerConfig> convConfig;
-extern vector<FullConnectLayerConfig> fcConfig;
-extern SoftmaxLayerConfig softmaxConfig;
-extern vector<int> sample_vec;
-
-///////////////////////////////////
-// General parameters
-///////////////////////////////////
+static double leaky_relu_alpha = 100.0;
 extern bool is_gradient_checking;
 extern bool use_log;
-extern int log_iter;
-extern int batch_size;
-extern int pooling_method;
-extern int non_linearity;
 extern int training_epochs;
+extern int iter_per_epo;
 extern double lrate_w;
 extern double lrate_b;
-extern int iter_per_epo;
+
+extern double momentum_w_init;
+extern double momentum_d2_init;
+extern double momentum_w_adjust;
+extern double momentum_d2_adjust;
+
+extern int tmpdebug;
+
+
+

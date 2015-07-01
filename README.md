@@ -1,97 +1,81 @@
-#conv-net-version-3.0
+#conv-net-version-3.1.0
 =====================
 
-Newly implemented convnet (C++ / OpenCV).
-
-This is an **EARLY ADOPTERS EDITION**, which is still buggy, I'll post formal version in days.
+Deep neural network frame (C++ / OpenCV).
 
 To run this code, you should have 
 * a cifar-10 dataset( put "cifar-10-batches-bin" where this .md file is, you can get it from [HERE](http://www.cs.toronto.edu/~kriz/cifar.html), make sure to download the binary version which suitable for C programs);
 * OpenCV.
 
 ##Compile & Run
-
-* Compile: "cmake CMakeLists.txt" and then "make" 
- 
-* Run: "./conv" 
-
-* Clean log files: "./conv clean_log"
-
+* Compile: 
+```
+cmake .
+make
+``` 
+* Run: 
+```
+./cnn3
+``` 
 ##Updates 
 
 * 3-channels images supported.
 * Add Dropout;
-* In conv layers, one can use either 3-channel conv kernels or single-chanel conv kernels (that is to say, whether share weights).
 * Local Response Normalization supported.
 * Use log files dig deeper.
-* Use second order derivative back-prop to alter learning rate (unfinished).
+* Use second order derivative back-prop to alter learning rate.
+* **NEW**: Jul 1: version 3.1.0 released
 
-##File description 
+##Layer Config Description 
+* For each layer, there is a **layer_name**, a **layer_type**, and a **output_format**.
+* There are currently 2 output formats: **matrix** (cv::Mat, CV_64FC1), and **image** (vector of cv::Mat, CV_64FC3).
 
-* **channel_3.h & channel_3.cc** - functions dealing with 3-channels matrices
+####Input Layer
+* **batch size**: the training process is using mini-batch stochastic gradient descent.
 
-* **convolution.h & convolution.cc** - convolution / pooling / local response normalization implementations
+####Convolutional Layer
+* **kernel size**: size of kernels for convolution calculation.
+* **kernel amount**: amount of kernels for convolution calculation.
+* **combine map**: amount of combine feature map, details can be found in [Notes on Convolutional Neural Networks](http://cogprints.org/5869/1/cnn_tutorial.pdf).
+* **weight decay**: weight decay for convolutional kernels.
+* **padding**: padding before doing convolution.
+* **stride**: stride when doing convolution (For "VALID" type of convolution, **result size = (image_size + 2 * padding - kernel_size) / stride + 1)**.
 
-* **cost_gradient.h & cost_gradient.cc** - function which calculates the cost function and gradients given data and weights of each layer
+####Fully Connected Layer
+* **num hidden neurons**: size of fully connected layer.
+* **weight decay**: weight decay for fully connected layer.
 
-* **gradient_checking.h & gradient_checking.cc** - gradient checking functions. (You may want to disable dropout during gradient checking.)
+####Softmax Layer
+* **num classes**: output size of softmax layer.
+* **weight decay**: weight decay for softmax layer.
 
-* **helper.h & helper.cc** - tiny helper functions
+####Non-linearity Layer
+* **method**: sigmoid/tanh/relu/leaky_relu.
 
-* **matrix_maths.h & matrix_maths.cc** - matrix maths functions, such as conv2() and rot90()
+####Pooling Layer
+* **method**: max/mean/stochastic.
+* **overlap**: if use overlap pooling.
+* **window size**: window size when using overlap pooling.
+* **stride**: pooling stride.
 
-* **read_data.h & read_data.cc** - this read_data supports only CIFAR-10 dataset
+####Local Response Normalization Layer
+* **alpha**, **beta**, **k**, **n**: see [ImageNet Classification with Deep Convolutional Neural Networks](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf).
 
-* **get_sample.h & get_sample.cc** - sample from cv::Mat or vector<Mat> data
+####Dropout Layer
+* **dropout rate**: percentage of zeros when generating Bernoulli matrix.
 
-* **result_predict.h & result_predict.cc** - functions for result predict
+####Combine Layer
+* for implementing GoogLeNet, TODO...
 
-* **save_weights.h & save_weights.cc** - save weights into .txt file
-
-* **string_proc.h & string_proc.cc** - I'm using unordered_map<string, Mat>, so here are the tedious string processing functions
-
-* **train_network.h & train_network.cc** - using sgd with momentum method
-
-* **weight_init.h & weight_init.cc** - initialize weights of the whole network
-
-* **read_config.h & read_config.cc** - read config file for config parameters, see config file part below
-
-* **general_settings.h** - general settings
-
-* **data_structure.h** - data structure definition of network
-
-* **sample.cc** - main() inside :)
-
-##Config Files
-
-####General Parameters Config
-* if is gradient checking
-* use or not use log (for debugging, should be faster if not using it)
-* batch size
-* pooling method
-* non-linearity method
-* training epochs
-* iteration per epoch
-* learning rate decay
-* learning rate for weight matrices
-* learning rate for bias
-
-####Layers Config
-* kernel size (in **Convolutional** layers)
-* kernel amount (in **Convolutional** layers)
-* weight decay (in **Convolutional** layers, **Full-Connected** Layers, **Softmax** Layer)
-* pooling dimension (in **Convolutional** layers)
-* if to use 3-channel kernel (in **Convolutional** layers)
-* if to use local response normalization (in **Convolutional** layers)
-* amount of hidden neurons (in **Full-Connected** Layers)
-* dropout rate (in **Full-Connected** Layers)
-* amount of output classes (in **Softmax** Layer)
-
-####Multi-Layer
-If you are using multiple of same kind of layer, just write layer config one after another. There's [an example config file](https://github.com/xingdi-eric-yuan/conv-net-version-3/blob/master/config.txt) inside.
+####Branch Layer
+* for implementing GoogLeNet, TODO...
 
 ##Structure and Algorithm
 See my several posts about CNNs at [my tech-blog](http://eric-yuan.me).
+
+##TODO
+*combine layer
+*branch layer
 
 The MIT License (MIT)
 ------------------

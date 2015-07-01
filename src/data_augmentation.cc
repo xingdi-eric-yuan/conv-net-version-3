@@ -1,4 +1,4 @@
-#include "data_enlarge.h"
+#include "data_augmentation.h"
 
 using namespace cv;
 using namespace std;
@@ -50,44 +50,23 @@ addWhiteNoise(const Mat &_from, Mat &_to, double stdev){
 void 
 dataEnlarge(vector<Mat>& data, Mat& label){
     int nSamples = data.size();
-    
-    /*
+    Mat tmp;
     // flip left right
     for(int i = 0; i < nSamples; i++){
         fliplr(data[i], tmp);
         data.push_back(tmp);
     }
-    // flip up down
-    for(int i = 0; i < nSamples; i++){
-        flipud(data[i], tmp);
-        data.push_back(tmp);
-    }
-    // flip left right up down
-    for(int i = 0; i < nSamples; i++){
-        flipudlr(data[i], tmp);
-        data.push_back(tmp);
-    }
-    */
     // rotate -10 degree
     for(int i = 0; i < nSamples; i++){
-        Mat tmp;
         rotateNScale(data[i], tmp, -10, 1.2);
         data.push_back(tmp);
     }
     // rotate +10 degree
     for(int i = 0; i < nSamples; i++){
-        Mat tmp;
         rotateNScale(data[i], tmp, 10, 1.2);
         data.push_back(tmp);
     }
-    // add white noise
-    for(int i = 0; i < nSamples; i++){
-        Mat tmp;
-        addWhiteNoise(data[i], tmp, 0.1);
-        data.push_back(tmp);
-    }
     // copy label matrix
-	cv::Mat tmp;
     repeat(label, 1, 4, tmp); 
 	label = tmp;
 }
