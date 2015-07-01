@@ -52,7 +52,7 @@ gradientChecking_SoftmaxLayer(std::vector<network_layer*> &flow, const std::vect
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
     
-    forwardPassInit(sampleX, sampleY, flow);
+    // forwardPassInit(sampleX, sampleY, flow);
     forwardPass(sampleX, sampleY, flow);
     backwardPass(flow);
 
@@ -75,7 +75,7 @@ gradientChecking_FullyConnectedLayer(std::vector<network_layer*> &flow, const st
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
 
-    forwardPassInit(sampleX, sampleY, flow);
+    // forwardPassInit(sampleX, sampleY, flow);
     forwardPass(sampleX, sampleY, flow);
     backwardPass(flow);
 
@@ -98,7 +98,7 @@ gradientChecking_ConvolutionalLayer(std::vector<network_layer*> &flow, const std
     //Gradient Checking (remember to disable this part after you're sure the 
     //cost function and dJ function are correct)
     
-    forwardPassInit(sampleX, sampleY, flow);
+    // forwardPassInit(sampleX, sampleY, flow);
     forwardPass(sampleX, sampleY, flow);
     backwardPass(flow);
 

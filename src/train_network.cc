@@ -128,7 +128,6 @@ forwardPassTest(const std::vector<Mat> &x, const Mat &y, std::vector<network_lay
             ((dropout_layer*)flow[i]) -> forwardPassTest(batch_size, flow[i - 1]);
         }
 
-
 /*
         cout<<flow[i] -> layer_name<<endl;
  
@@ -200,6 +199,56 @@ updateNetwork(std::vector<network_layer*> &flow, int iter){
 }
 
 void 
+printNetwork(std::vector<network_layer*> &flow){
+    cout<<"****************************************************************************"<<endl
+        <<"**                       NETWORK LAYERS                                     "<<endl
+        <<"****************************************************************************"<<endl<<endl;
+    for(int i = 0; i < flow.size(); ++i){
+        cout<<"##-------------------layer number "<<i<<", layer name is "<<flow[i] -> layer_name<<endl;
+        if(flow[i] -> layer_type == "input"){
+            cout<<"batch size = "<<((input_layer*)flow[i]) -> batch_size<<endl;
+        }elif(flow[i] -> layer_type == "convolutional"){
+            cout<<"kernel amount = "<<((convolutional_layer*)flow[i]) -> kernels.size()<<endl;
+            cout<<"kernel size = "<<((convolutional_layer*)flow[i]) -> kernels[0] -> w.size()<<endl;
+            cout<<"padding = "<<((convolutional_layer*)flow[i]) -> padding<<endl;
+            cout<<"stride = "<<((convolutional_layer*)flow[i]) -> stride<<endl;
+            cout<<"combine feature map = "<<((convolutional_layer*)flow[i]) -> combine_feature_map<<endl;
+            cout<<"weight decay = "<<((convolutional_layer*)flow[i]) -> kernels[0] -> weight_decay<<endl;
+        }elif(flow[i] -> layer_type == "fully_connected"){
+            cout<<"hidden size = "<<((fully_connected_layer*)flow[i]) -> size<<endl;
+            cout<<"weight decay = "<<((fully_connected_layer*)flow[i]) -> weight_decay<<endl;
+        }elif(flow[i] -> layer_type == "softmax"){
+            cout<<"output size = "<<((softmax_layer*)flow[i]) -> output_size<<endl;
+            cout<<"weight decay size = "<<((softmax_layer*)flow[i]) -> weight_decay<<endl;
+        }elif(flow[i] -> layer_type == "combine"){
+            ;
+        }elif(flow[i] -> layer_type == "branch"){
+            ;
+        }elif(flow[i] -> layer_type == "non_linearity"){
+            cout<<"non-lin method = "<<((non_linearity_layer*)flow[i]) -> method<<endl;  
+        }elif(flow[i] -> layer_type == "pooling"){
+            cout<<"pooling method = "<<((pooling_layer*)flow[i]) -> method<<endl; 
+            cout<<"overlap = "<<((pooling_layer*)flow[i]) -> overlap<<endl; 
+            cout<<"stride = "<<((pooling_layer*)flow[i]) -> stride<<endl; 
+            cout<<"window size = "<<((pooling_layer*)flow[i]) -> window_size<<endl; 
+        }elif(flow[i] -> layer_type == "local_response_normalization"){
+            cout<<"alpha = "<<((local_response_normalization_layer*)flow[i]) -> alpha<<endl; 
+            cout<<"beta = "<<((local_response_normalization_layer*)flow[i]) -> beta<<endl; 
+            cout<<"k = "<<((local_response_normalization_layer*)flow[i]) -> k<<endl; 
+            cout<<"n = "<<((local_response_normalization_layer*)flow[i]) -> n<<endl; 
+        }elif(flow[i] -> layer_type == "dropout"){
+            cout<<"dropout rate = "<<((dropout_layer*)flow[i]) -> dropout_rate<<endl; 
+        }
+        if(flow[i] -> output_format == "matrix"){
+            cout<<"output matrix size is "<<flow[i] -> output_matrix.size()<<endl;
+        }else{
+            cout<<"output vector size is "<<flow[i] -> output_vector.size()<<" * "<<flow[i] -> output_vector[0].size()<<" * "<<flow[i] -> output_vector[0][0].size()<<endl;
+        }
+        cout<<"---------------------"<<endl;
+    }
+}
+
+void 
 testNetwork(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*> &flow){
     
     int batch_size = 100;
@@ -244,13 +293,15 @@ testNetwork(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*>
 void
 trainNetwork(const std::vector<Mat> &x, const Mat &y, const std::vector<Mat> &tx, const Mat &ty, std::vector<network_layer*> &flow){
 
+    forwardPassInit(x, y, flow);
+    printNetwork(flow);
+
     if (is_gradient_checking){
         gradient_checking_network_layers(flow, x, y);
     }else{
     cout<<"****************************************************************************"<<endl
         <<"**                       TRAINING NETWORK......                             "<<endl
         <<"****************************************************************************"<<endl<<endl;
-        forwardPassInit(x, y, flow);
         
         int k = 0;
         for(int epo = 1; epo <= training_epochs; epo++){

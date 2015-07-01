@@ -72,7 +72,7 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
 	
     read_batch(filename, testX, testY);
     preProcessing(trainX, testX);
-    dataEnlarge(trainX, trainY);
+    // dataEnlarge(trainX, trainY);
 
     cout<<"****************************************************************************"<<endl
         <<"**                        READ DATASET COMPLETE                             "<<endl
