@@ -36,11 +36,11 @@ $
 LAYER = convolutional;
 NAME = conv1;
 OUTPUT_TYPE = image;
-KERNEL_SIZE = 7;
+KERNEL_SIZE = 15;
 KERNEL_AMOUNT = 16;
 PADDING = 0;
 STRIDE = 1;
-COMBINE_MAP = 8;
+COMBINE_MAP = 0;
 WEIGHT_DECAY = 1e-6;
 &
 
@@ -52,59 +52,12 @@ METHOD = leaky_relu;
 &
 
 $
-LAYER = local_response_normalization;
-NAME = lrn1;
-OUTPUT_TYPE = image;
-ALPHA = 0.000125;
-BETA = 0.75;
-K = 2.0;
-N = 5;
-&
-
-$
 LAYER = pooling;
 NAME = pool1;
 METHOD = max;
 OUTPUT_TYPE = image;
-OVERLAP = false;
-STRIDE = 2;
-&
-
-$
-LAYER = convolutional;
-NAME = conv2;
-OUTPUT_TYPE = image;
-KERNEL_SIZE = 8;
-KERNEL_AMOUNT = 16;
-PADDING = 0;
-STRIDE = 1;
-COMBINE_MAP = 8;
-WEIGHT_DECAY = 1e-6;
-&
-
-$
-LAYER = non_linearity;
-NAME = nl2;
-OUTPUT_TYPE = image;
-METHOD = leaky_relu;
-&
-
-$
-LAYER = local_response_normalization;
-NAME = lrn2;
-OUTPUT_TYPE = image;
-ALPHA = 0.000125;
-BETA = 0.75;
-K = 2.0;
-N = 5;
-&
-
-$
-LAYER = pooling;
-NAME = pool2;
-METHOD = max;
-OUTPUT_TYPE = image;
-OVERLAP = false;
+OVERLAP = true;
+WINDOW_SIZE = 1;
 STRIDE = 2;
 &
 
