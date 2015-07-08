@@ -145,10 +145,9 @@ conv2(const Mat &img, const Mat &kernel, int convtype, int padding, int stride) 
     // zero padding for CONV_FULL
     int additionalRows, additionalCols;
     if(CONV_FULL == convtype) {
-        source = Mat();
         additionalRows = kernel.rows - 1;
         additionalCols = kernel.cols - 1;
-        copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows / 2, (additionalCols + 1) / 2, additionalCols / 2, BORDER_CONSTANT, Scalar(0));
+        copyMakeBorder(source, source, (additionalRows + 1) / 2, additionalRows / 2, (additionalCols + 1) / 2, additionalCols / 2, BORDER_CONSTANT, Scalar(0));
     } 
     Point anchor(kernel.cols - kernel.cols / 2 - 1, kernel.rows - kernel.rows / 2 - 1);
     int borderMode = BORDER_CONSTANT;
@@ -176,14 +175,85 @@ conv2(const Mat &img, const Mat &kernel, int convtype, int padding, int stride) 
     return dest;
 }
 
+
+Mat convolveDFT(const Mat &A, const Mat &B){
+    Mat C;
+    // reallocate the output array if needed
+    C.create(abs(A.rows + B.rows)-1, abs(A.cols + B.cols)-1, A.type());
+    Size dftSize;
+    // calculate the size of DFT transform
+    dftSize.width = getOptimalDFTSize(A.cols + B.cols - 1);
+    dftSize.height = getOptimalDFTSize(A.rows + B.rows - 1);
+    // allocate temporary buffers and initialize them with 0's
+    Mat tempA(dftSize, A.type(), Scalar::all(0));
+    Mat tempB(dftSize, B.type(), Scalar::all(0));
+    // copy A and B to the top-left corners of tempA and tempB, respectively
+    Mat roiA(tempA, Rect(0,0,A.cols,A.rows));
+    A.copyTo(roiA);
+    Mat roiB(tempB, Rect(0,0,B.cols,B.rows));
+    B.copyTo(roiB);
+    // now transform the padded A & B in-place;
+    // use "nonzeroRows" hint for faster processing
+    dft(tempA, tempA, 0, A.rows);
+    dft(tempB, tempB, 0, B.rows);
+    // multiply the spectrums;
+    // the function handles packed spectrum representations well
+    mulSpectrums(tempA, tempB, tempA, 0, false);
+    // transform the product back from the frequency domain.
+    // Even though all the result rows will be non-zero,
+    // you need only the first C.rows of them, and thus you
+    // pass nonzeroRows == C.rows
+    dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, C.rows);
+    //idft(tempA, tempA, DFT_SCALE, A.rows + B.rows - 1);
+    // now copy the result back to C.
+    tempA(Rect(0, 0, C.cols, C.rows)).copyTo(C);
+    return C;
+    // all the temporary buffers will be deallocated automatically
+}
+
+Mat 
+conv2dft(const Mat &img, const Mat &kernel, int convtype, int padding, int stride) {
+    Mat tmp;
+    Mat source;
+
+    img.copyTo(tmp);
+    // padding
+    source = Mat();
+    copyMakeBorder(tmp, source, padding, padding, padding, padding, BORDER_CONSTANT, Scalar(0));
+    
+    tmp = convolveDFT(source, kernel);
+    if(CONV_SAME == convtype){
+        tmp = tmp.colRange((kernel.cols) / 2, tmp.cols - kernel.cols / 2)
+                   .rowRange((kernel.rows) / 2, tmp.rows - kernel.rows / 2);
+    }
+    if(CONV_VALID == convtype) {
+        int tmpx = source.cols - kernel.cols + 1;
+        int tmpy = source.rows - kernel.rows + 1;
+        tmp = tmp.colRange((tmp.cols - tmpx) / 2, tmp.cols - ((tmp.cols - tmpx) / 2))
+                   .rowRange((tmp.rows - tmpy) / 2, tmp.rows - ((tmp.cols - tmpx) / 2));
+    }
+    int xsize = tmp.cols / stride;
+    if(tmp.cols % stride > 0) ++xsize;
+    int ysize = tmp.rows / stride;
+    if(tmp.rows % stride > 0) ++ysize;
+    Mat dest = Mat::zeros(ysize, xsize, CV_64FC1);
+    for(int i = 0; i < dest.rows; i++){
+        for(int j = 0; j < dest.cols; j++){
+            dest.ATD(i, j) = tmp.ATD(i * stride, j * stride);
+        }
+    }
+    return dest;
+}
+
+
 Mat
 convCalc(const Mat &img, const Mat &kernel, int convtype, int padding, int stride){
     Mat tmp;
     img.copyTo(tmp);
     if(tmp.channels() == 1 && kernel.channels() == 1){
-        return conv2(tmp, kernel, convtype, padding, stride);
+        return conv2dft(tmp, kernel, convtype, padding, stride);
     }else{
-        return parallel3(conv2, tmp, kernel, convtype, padding, stride);
+        return parallel3(conv2dft, tmp, kernel, convtype, padding, stride);
     }
 }
 
@@ -424,7 +494,7 @@ Pooling_with_overlap(const Mat &M, Size2i window_size, int stride, int poolingMe
             }
             tmplocat.push_back(tppt);  
             tmpres.AT3D(i, j) = Scalar2Vec3d(val);
-            tmp.release();
+            //tmp.release();
             tppt.clear();
             std::vector<Point>().swap(tppt);
         }
@@ -446,7 +516,7 @@ Pooling_with_overlap(const Mat &M, Size2i window_size, int stride, int poolingMe
     }
     tmplocat.clear();
     std::vector<std::vector<Point> >().swap(tmplocat);
-    tmpres.release();
+    //tmpres.release();
     return dest;
 }
 
@@ -479,7 +549,7 @@ Pooling_with_overlap_test(const Mat &M, Size2i window_size, int stride, int pool
                 prob.release();
             }
             tmpres.AT3D(i, j) = Scalar2Vec3d(val);
-            tmp.release();
+            //tmp.release();
         }
     }
     int xsize = tmpres.cols / stride;
@@ -496,7 +566,7 @@ Pooling_with_overlap_test(const Mat &M, Size2i window_size, int stride, int pool
             }
         }
     }
-    tmpres.release();
+    //tmpres.release();
     return dest;
 }
 
@@ -576,14 +646,14 @@ Pooling(const Mat &M, int stride, int poolingMethod, std::vector<std::vector<Poi
                     val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
                     tppt.push_back(Point(loc[ch].x + j * stride, loc[ch].y + i * stride));
                 }
-                prob.release();
+                //prob.release();
             }
             res.AT3D(i, j) = Scalar2Vec3d(val);
             locat.push_back(tppt);
-            temp.release();
+            //temp.release();
         }
     }
-    newM.release();
+    //newM.release();
     return res;
 }
 
@@ -628,10 +698,10 @@ Pooling_test(const Mat &M, int stride, int poolingMethod){
                 prob.release();
             }
             res.AT3D(i, j) = Scalar2Vec3d(val);
-            temp.release();
+            //temp.release();
         }
     }
-    newM.release();
+    //newM.release();
     return res;
 }
 

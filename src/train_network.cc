@@ -46,7 +46,7 @@ forwardPassInit(const std::vector<Mat> &x, const Mat &y, std::vector<network_lay
 void 
 forwardPass(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*> &flow){
 
-    // cout<<"---------------- forward "<<endl;
+     //cout<<"---------------- forward "<<endl;
     // forward pass
     int batch_size = 0;
     double J1 = 0, J2 = 0, J3 = 0, J4 = 0;

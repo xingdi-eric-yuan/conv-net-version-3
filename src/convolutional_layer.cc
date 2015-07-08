@@ -5,9 +5,9 @@ using namespace std;
 // kernel
 convolutional_kernel::convolutional_kernel(){}
 convolutional_kernel::~convolutional_kernel(){
-    w.release();
-    wgrad.release();
-    wd2.release();
+//    w.release();
+//    wgrad.release();
+//    wd2.release();
 }
 
 void convolutional_kernel::init_config(int width, double weightDecay){
@@ -76,6 +76,7 @@ void convolutional_layer::init_weight(network_layer* previous_layer){
     iter = 0;
     mu = 1e-2;
     convolutional_layer::setMomentum();
+    tmpw.release();
 }
 
 void convolutional_layer::setMomentum(){
@@ -156,6 +157,9 @@ void convolutional_layer::forwardPass(int nsamples, network_layer* previous_laye
         }
         output_vector.push_back(eachsample);
     }
+    input.clear();
+    std::vector<std::vector<Mat> >().swap(input);
+    c_weight.release();
 }
 
 void convolutional_layer::forwardPassTest(int nsamples, network_layer* previous_layer){
@@ -310,6 +314,8 @@ void convolutional_layer::backwardPass(int nsamples, network_layer* previous_lay
     tmp2.release();
     tmp3.release();
     c_weight.release();
+    c_weightgrad.release();
+    c_weightd2.release();
     tmp_wgrad.clear();
     std::vector<Mat>().swap(tmp_wgrad);
     tmp_wd2.clear();
