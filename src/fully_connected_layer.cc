@@ -76,7 +76,6 @@ void fully_connected_layer::forwardPass(int nsamples, network_layer* previous_la
     }
     Mat tmpacti = w * input + repeat(b, 1, nsamples);
     tmpacti.copyTo(output_matrix);
-    input.release();
 }
 
 void fully_connected_layer::forwardPassTest(int nsamples, network_layer* previous_layer){
@@ -109,20 +108,8 @@ void fully_connected_layer::backwardPass(int nsamples, network_layer* previous_l
         tmp.copyTo(delta_matrix);
         tmp = pow(w.t(), 2.0) * deriv2;
         tmp.copyTo(d2_matrix);
-
-        derivative.release();
-        deriv2.release();
-        tmp.release();
     }
-    input.release();
-
 }
-//*/
-
-/*
-void fully_connected_layer::update(){}
-*/
-
 
 
 

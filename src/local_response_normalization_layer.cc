@@ -88,8 +88,6 @@ void local_response_normalization_layer::backwardPass(int nsamples, network_laye
             tmp2.copyTo(d2_vector[i][j]);
         }
     }
-    tmp.release();
-    tmp2.release();
     derivative.clear();
     std::vector<std::vector<Mat> >().swap(derivative);
     deriv2.clear();
@@ -119,7 +117,6 @@ Mat local_response_normalization_layer::local_response_normalization(std::vector
 	double scale = alpha / (to - from + 1);
 	sum = sum.mul(Scalar::all(scale)) + Scalar::all(k);
 	divide(res, pow(sum, beta), res);
-	sum.release();
 	return res;
 }
 
@@ -152,12 +149,6 @@ Mat local_response_normalization_layer::dlocal_response_normalization(std::vecto
 	tmp2 = tmp2.mul(Scalar::all(tmp));
 	Mat res = t2 - tmp2;
 	res = divide(res, t3);
-
-	t1.release();
-	t2.release();
-	t3.release();
-	tmp2.release();
-    sum.release();
     return res;
 }
 

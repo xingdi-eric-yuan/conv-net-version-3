@@ -310,12 +310,6 @@ void convolutional_layer::backwardPass(int nsamples, network_layer* previous_lay
         tmp = div(tmp, nsamples);
         tmp.copyTo(combine_weight_d2);
     }
-    tmp.release();
-    tmp2.release();
-    tmp3.release();
-    c_weight.release();
-    c_weightgrad.release();
-    c_weightd2.release();
     tmp_wgrad.clear();
     std::vector<Mat>().swap(tmp_wgrad);
     tmp_wd2.clear();

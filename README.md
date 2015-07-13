@@ -5,7 +5,8 @@ Deep neural network frame (C++ / OpenCV).
 
 To run this code, you should have 
 * a cifar-10 dataset( put "cifar-10-batches-bin" where this .md file is, you can get it from [HERE](http://www.cs.toronto.edu/~kriz/cifar.html), make sure to download the binary version which suitable for C programs);
-* OpenCV.
+* OpenCV 3.0.
+* cmake
 
 ##Compile & Run
 * Compile: 
@@ -24,7 +25,8 @@ make
 * Local Response Normalization supported.
 * Use log files dig deeper.
 * Use second order derivative back-prop to alter learning rate.
-* **NEW**: Jul 1: version 3.1.0 released
+* Jul 1: version 3.1.0 released
+* **NEW**: Jul.13 OpenCV 3.0 supported, use dft to accelerate convolution
 
 ##Layer Config Description 
 * For each layer, there is a **layer_name**, a **layer_type**, and a **output_format**.

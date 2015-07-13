@@ -44,7 +44,6 @@ gradient_checking(const std::vector<Mat> &sampleX, const Mat &sampleY, std::vect
             }
         }
     }
-    grad.release();
 }
 
 void

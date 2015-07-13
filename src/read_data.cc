@@ -65,7 +65,6 @@ read_CIFAR10_data(vector<Mat> &trainX, vector<Mat> &testX, Mat &trainY, Mat &tes
         subView = trainY(roi);
         labels[i].copyTo(subView);
     }
-    subView.release();
     // testX, testY
     filename = "cifar-10-batches-bin/test_batch.bin";
     testY = Mat::zeros(1, 10000, CV_64FC1);  
@@ -108,13 +107,6 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
         //cvtColor(testX[i], testX[i], CV_RGB2YCrCb);
         testX[i].convertTo(testX[i], CV_64FC3, 1.0/255, 0);
     }
-    
-    /*
-    for(int i = 0; i < trainX.size(); i++)
-        trainX[i] -= 0.5;
-    for(int i = 0; i < testX.size(); i++)
-        testX[i] -= 0.5;
-*/
 
     // first convert vec of mat into a single mat
     Mat tmp = concat(trainX);
@@ -134,10 +126,6 @@ preProcessing(vector<Mat> &trainX, vector<Mat> &testX){
     for(int i = 0; i < testX.size(); i++){
         divide(testX[i] - mean, stddev, testX[i]);
     }
-    tmp.release();
-    tmp2.release();
-    alldata.release();
-
 
 /*
     // get average

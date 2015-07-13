@@ -169,12 +169,8 @@ conv2(const Mat &img, const Mat &kernel, int convtype, int padding, int stride) 
             dest.ATD(i, j) = tmp.ATD(i * stride, j * stride);
         }
     }
-    tmp.release();
-    source.release();
-    fkernel.release();
     return dest;
 }
-
 
 Mat convolveDFT(const Mat &A, const Mat &B){
     Mat C;
@@ -211,6 +207,41 @@ Mat convolveDFT(const Mat &A, const Mat &B){
     // all the temporary buffers will be deallocated automatically
 }
 
+UMat convolveDFT(const UMat &A, const UMat &B){
+    UMat C;
+    // reallocate the output array if needed
+    C.create(abs(A.rows + B.rows)-1, abs(A.cols + B.cols)-1, A.type());
+    Size dftSize;
+    // calculate the size of DFT transform
+    dftSize.width = getOptimalDFTSize(A.cols + B.cols - 1);
+    dftSize.height = getOptimalDFTSize(A.rows + B.rows - 1);
+    // allocate temporary buffers and initialize them with 0's
+    UMat tempA(dftSize, A.type(), Scalar::all(0));
+    UMat tempB(dftSize, B.type(), Scalar::all(0));
+    // copy A and B to the top-left corners of tempA and tempB, respectively
+    UMat roiA(tempA, Rect(0,0,A.cols,A.rows));
+    A.copyTo(roiA);
+    UMat roiB(tempB, Rect(0,0,B.cols,B.rows));
+    B.copyTo(roiB);
+    // now transform the padded A & B in-place;
+    // use "nonzeroRows" hint for faster processing
+    dft(tempA, tempA, 0, A.rows);
+    dft(tempB, tempB, 0, B.rows);
+    // multiply the spectrums;
+    // the function handles packed spectrum representations well
+    mulSpectrums(tempA, tempB, tempA, 0, false);
+    // transform the product back from the frequency domain.
+    // Even though all the result rows will be non-zero,
+    // you need only the first C.rows of them, and thus you
+    // pass nonzeroRows == C.rows
+    dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, C.rows);
+    //idft(tempA, tempA, DFT_SCALE, A.rows + B.rows - 1);
+    // now copy the result back to C.
+    tempA(Rect(0, 0, C.cols, C.rows)).copyTo(C);
+    return C;
+    // all the temporary buffers will be deallocated automatically
+}
+
 Mat 
 conv2dft(const Mat &img, const Mat &kernel, int convtype, int padding, int stride) {
     Mat tmp;
@@ -220,8 +251,16 @@ conv2dft(const Mat &img, const Mat &kernel, int convtype, int padding, int strid
     // padding
     source = Mat();
     copyMakeBorder(tmp, source, padding, padding, padding, padding, BORDER_CONSTANT, Scalar(0));
-    
+    /*
+    UMat usource, ukernel, uconv;
+    source.copyTo(usource);
+    kernel.copyTo(ukernel);
+    uconv = convolveDFT(usource, ukernel);
+    uconv.copyTo(tmp);
+    */
     tmp = convolveDFT(source, kernel);
+
+
     if(CONV_SAME == convtype){
         tmp = tmp.colRange((kernel.cols) / 2, tmp.cols - kernel.cols / 2)
                    .rowRange((kernel.rows) / 2, tmp.rows - kernel.rows / 2);
@@ -338,7 +377,6 @@ getBernoulliMatrix(int height, int width, double prob){
     randu(ran, Scalar(0), Scalar(1.0));
     Mat res = ran >= prob;
     res.convertTo(res, CV_64FC1, 1.0 / 255, 0);
-    ran.release();
     return res;
 }
 
@@ -490,11 +528,9 @@ Pooling_with_overlap(const Mat &M, Size2i window_size, int stride, int poolingMe
                     val[ch] = tmp.AT3D(loc[ch].y, loc[ch].x)[ch];
                     tppt.push_back(Point(loc[ch].x + j, loc[ch].y + i));
                 }     
-                prob.release();
             }
             tmplocat.push_back(tppt);  
             tmpres.AT3D(i, j) = Scalar2Vec3d(val);
-            //tmp.release();
             tppt.clear();
             std::vector<Point>().swap(tppt);
         }
@@ -516,7 +552,6 @@ Pooling_with_overlap(const Mat &M, Size2i window_size, int stride, int poolingMe
     }
     tmplocat.clear();
     std::vector<std::vector<Point> >().swap(tmplocat);
-    //tmpres.release();
     return dest;
 }
 
@@ -546,10 +581,8 @@ Pooling_with_overlap_test(const Mat &M, Size2i window_size, int stride, int pool
                 for(int ch = 0; ch < loc.size(); ch++){
                     val[ch] = tmp.AT3D(loc[ch].y, loc[ch].x)[ch];
                 }     
-                prob.release();
             }
             tmpres.AT3D(i, j) = Scalar2Vec3d(val);
-            //tmp.release();
         }
     }
     int xsize = tmpres.cols / stride;
@@ -566,7 +599,6 @@ Pooling_with_overlap_test(const Mat &M, Size2i window_size, int stride, int pool
             }
         }
     }
-    //tmpres.release();
     return dest;
 }
 
@@ -646,14 +678,11 @@ Pooling(const Mat &M, int stride, int poolingMethod, std::vector<std::vector<Poi
                     val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
                     tppt.push_back(Point(loc[ch].x + j * stride, loc[ch].y + i * stride));
                 }
-                //prob.release();
             }
             res.AT3D(i, j) = Scalar2Vec3d(val);
             locat.push_back(tppt);
-            //temp.release();
         }
     }
-    //newM.release();
     return res;
 }
 
@@ -695,13 +724,10 @@ Pooling_test(const Mat &M, int stride, int poolingMethod){
                 for(int ch = 0; ch < loc.size(); ch++){
                     val[ch] = temp.AT3D(loc[ch].y, loc[ch].x)[ch];
                 }
-                prob.release();
             }
             res.AT3D(i, j) = Scalar2Vec3d(val);
-            //temp.release();
         }
     }
-    //newM.release();
     return res;
 }
 
@@ -718,7 +744,6 @@ UnPooling(const Mat &M, int stride, int poolingMethod, std::vector<std::vector<P
         cout<<M.size()<<",     "<<one.size()<<endl;
         res = kron(M, one);
         divide(res, Scalar(stride * stride, stride * stride, stride * stride), res);
-        one.release();
     }elif(POOL_MAX == poolingMethod || POOL_STOCHASTIC == poolingMethod){
         res = Mat::zeros(M.rows * stride, M.cols * stride, CV_64FC3);
         for(int i = 0; i < M.rows; i++){
@@ -742,8 +767,6 @@ findLoc(const Mat &prob, int m){
     int i = idx.at<int>(0, m);
     res.x = i % prob.cols;
     res.y = i / prob.cols;
-    temp.release();
-    idx.release();
     return res;
 }
 
@@ -799,7 +822,6 @@ compareMatrix(const Mat &a, const Mat &b){
     tmp -= a;
     Mat res = (tmp == 0.0);
     res.convertTo(res, CV_64FC1, 1.0 / 255.0, 0);
-    tmp.release();
     return (int)(sum1(res));
 }
 

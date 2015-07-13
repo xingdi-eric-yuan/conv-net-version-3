@@ -28,8 +28,6 @@ void dropout_layer::forwardPass(int nsamples, network_layer* previous_layer){
         res.copyTo(bernoulli_matrix);
         res = res.mul(input);
         res.copyTo(output_matrix);
-        input.release();
-        res.release();
     }else{ // output_format == "image"
         std::vector<std::vector<Mat> > input;
         if(previous_layer -> output_format == "image"){
@@ -79,8 +77,6 @@ void dropout_layer::forwardPassTest(int nsamples, network_layer* previous_layer)
         input.copyTo(res);
         res = res.mul(dropout_rate);
         res.copyTo(output_matrix);
-        input.release();
-        res.release();
     }else{ // output_format == "image"
         std::vector<std::vector<Mat> > input;
         if(previous_layer -> output_format == "image"){
@@ -126,11 +122,6 @@ void dropout_layer::backwardPass(int nsamples, network_layer* previous_layer, ne
         Mat tmp2 = deriv2.mul(pow(bernoulli_matrix, 2.0));
         tmp.copyTo(delta_matrix);
         tmp2.copyTo(d2_matrix);
-
-        tmp.release();
-        tmp2.release();
-        derivative.release();
-        deriv2.release();
 
     }else{
         if(previous_layer -> output_format != "image"){

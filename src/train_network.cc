@@ -269,7 +269,6 @@ testNetwork(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*>
         //cout<<" "<<flow[flow.size() - 1] -> output_matrix<<endl<<endl<<endl;
         //cout<<" "<<res<<endl;
         correct += compareMatrix(res, batchY);
-        batchY.release();
         batchX.clear();
         std::vector<Mat>().swap(batchX);
     }
@@ -283,7 +282,6 @@ testNetwork(const std::vector<Mat> &x, const Mat &y, std::vector<network_layer*>
         forwardPassTest(batchX, batchY, flow);
         Mat res = findMax(flow[flow.size() - 1] -> output_matrix);
         correct += compareMatrix(res, batchY);
-        batchY.release();
         batchX.clear();
         std::vector<Mat>().swap(batchX);
     }
@@ -313,8 +311,8 @@ trainNetwork(const std::vector<Mat> &x, const Mat &y, const std::vector<Mat> &tx
                 updateNetwork(flow, k);
                 ++ tmpdebug;
             }   
-            //cout<<"Test training data: "<<endl;
-            //testNetwork(x, y, flow);
+            cout<<"Test training data: "<<endl;
+            testNetwork(x, y, flow);
             cout<<"Test testing data: "<<endl;
             testNetwork(tx, ty, flow);   
             

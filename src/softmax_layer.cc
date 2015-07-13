@@ -78,7 +78,6 @@ void softmax_layer::forwardPass(int nsamples, network_layer* previous_layer){
     M = exp(M);
     Mat p = divide(M, repeat(reduce(M, 0, CV_REDUCE_SUM), M.rows, 1));
     p.copyTo(output_matrix);
-    input.release();
 }
 
 void softmax_layer::forwardPassTest(int nsamples, network_layer* previous_layer){
@@ -90,7 +89,6 @@ void softmax_layer::forwardPassTest(int nsamples, network_layer* previous_layer)
     }
     Mat M = w * input + repeat(b, 1, nsamples);
     M.copyTo(output_matrix);
-    input.release();
 }
 
 void softmax_layer::backwardPass(int nsamples, network_layer* previous_layer, Mat& groundTruth){
@@ -111,8 +109,6 @@ void softmax_layer::backwardPass(int nsamples, network_layer* previous_layer, Ma
     tmp.copyTo(delta_matrix);
     tmp = pow(w.t(), 2.0) * pow(derivative, 2.0);
     tmp.copyTo(d2_matrix);
-    input.release();
-    derivative.release();
 
 }
 

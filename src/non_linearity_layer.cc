@@ -24,8 +24,6 @@ void non_linearity_layer::forwardPass(int nsamples, network_layer* previous_laye
         }
         Mat res = nonLinearity(input, method);
         res.copyTo(output_matrix);
-        input.release();
-        res.release();
     }else{ // output_format == "image"
 
         std::vector<std::vector<Mat> > input;
@@ -81,13 +79,6 @@ void non_linearity_layer::backwardPass(int nsamples, network_layer* previous_lay
 
         tmp2 = deriv2.mul(pow(tmp, 2.0));
         tmp2.copyTo(d2_matrix);
-
-        input.release();
-        tmp.release();
-        tmp2.release();
-        derivative.release();
-        deriv2.release();
-
     }else{
         if(previous_layer -> output_format != "image"){
             cout<<"??? image after matrix??? I can't do that for now..."<<endl;

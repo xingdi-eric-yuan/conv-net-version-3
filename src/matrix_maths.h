@@ -21,6 +21,7 @@ Mat rot90(const Mat &, int);
 // from http://blog.timmlinder.com/2011/07/opencv-equivalent-to-matlabs-conv2-function/
 Mat conv2(const Mat&, const Mat&, int, int, int);
 
+UMat convolveDFT(const UMat&, const UMat&);
 Mat convolveDFT(const Mat&, const Mat&);
 Mat conv2dft(const Mat&, const Mat&, int, int, int);
 

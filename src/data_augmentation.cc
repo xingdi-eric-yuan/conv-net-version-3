@@ -51,19 +51,21 @@ void
 dataEnlarge(vector<Mat>& data, Mat& label){
     int nSamples = data.size();
     Mat tmp;
+    
     // flip left right
     for(int i = 0; i < nSamples; i++){
         fliplr(data[i], tmp);
         data.push_back(tmp);
     }
+    
     // rotate -10 degree
     for(int i = 0; i < nSamples; i++){
-        rotateNScale(data[i], tmp, -10, 1.2);
+        rotateNScale(data[i], tmp, -2, 1.005);
         data.push_back(tmp);
     }
     // rotate +10 degree
     for(int i = 0; i < nSamples; i++){
-        rotateNScale(data[i], tmp, 10, 1.2);
+        rotateNScale(data[i], tmp, 2, 1.005);
         data.push_back(tmp);
     }
     // copy label matrix

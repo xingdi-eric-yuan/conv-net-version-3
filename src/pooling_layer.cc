@@ -143,7 +143,6 @@ void pooling_layer::backwardPass(int nsamples, network_layer* previous_layer, ne
 	        }
 	    }
 	}
-	tmp.release();
     derivative.clear();
     std::vector<std::vector<Mat> >().swap(derivative);
     deriv2.clear();
