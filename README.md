@@ -79,6 +79,9 @@ See my several posts about CNNs at [my tech-blog](http://eric-yuan.me).
 *combine layer
 *branch layer
 
+##GPU Version
+[There's also a GPU version of this code which I used nVidia CUDA.](https://github.com/xingdi-eric-yuan/cuda-deep-neural-nets).
+
 The MIT License (MIT)
 ------------------
 
